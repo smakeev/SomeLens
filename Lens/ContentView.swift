@@ -57,11 +57,10 @@ private struct DemoBackgroundView: View {
 }
 
 struct LensDemoScreen: View {
-    @State private var lensCenter: CGPoint = CGPoint(x: 200, y: 300)
-    @State private var isInitialPlacementDone = false
+    @State private var lensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
     @State private var counterValue: Double = 0
     @State private var counterDirection: Double = 1
-    @State private var lastCommittedLensCenter: CGPoint = .zero
+    @State private var lastCommittedLensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private let lensSettings = GlassLensSettings()
 
@@ -70,6 +69,11 @@ struct LensDemoScreen: View {
             let safeInsets = geo.safeAreaInsets
             let size = geo.size
             let currentCounter = Int(counterValue)
+            let lensCenter = clampedLensCenter(
+                ratio: lensCenterRatio,
+                containerSize: size,
+                safeInsets: safeInsets
+            )
 
             LensContainer(snapshotRefreshRate: .automatic) {
                 DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
@@ -80,13 +84,6 @@ struct LensDemoScreen: View {
                     .gesture(lensDragGesture(containerSize: size, safeInsets: safeInsets))
             }
             .ignoresSafeArea()
-            .onAppear {
-                if !isInitialPlacementDone {
-                    lensCenter = CGPoint(x: size.width / 2, y: size.height / 2)
-                    lastCommittedLensCenter = lensCenter
-                    isInitialPlacementDone = true
-                }
-            }
             .onReceive(counterTimer) { _ in
                 var next = counterValue + counterDirection * 1
                 if next > 100 {
@@ -104,24 +101,86 @@ struct LensDemoScreen: View {
     private func lensDragGesture(containerSize: CGSize, safeInsets: EdgeInsets) -> some Gesture {
         DragGesture()
             .onChanged { value in
+                let lastCommittedLensCenter = clampedLensCenter(
+                    ratio: lastCommittedLensCenterRatio,
+                    containerSize: containerSize,
+                    safeInsets: safeInsets
+                )
                 let proposed = CGPoint(
                     x: lastCommittedLensCenter.x + value.translation.width,
                     y: lastCommittedLensCenter.y + value.translation.height
                 )
-                let minX = safeInsets.leading + lensSettings.radius
-                let maxX = containerSize.width - safeInsets.trailing - lensSettings.radius
-                let minY = safeInsets.top + lensSettings.radius
-                let visualMargin: CGFloat = 6
-                let maxY = containerSize.height + safeInsets.bottom - visualMargin - lensSettings.radius
-                let clamped = CGPoint(
-                    x: min(max(proposed.x, minX), maxX),
-                    y: min(max(proposed.y, minY), maxY)
+                lensCenterRatio = lensCenterRatio(
+                    for: clampedLensCenter(
+                        proposed,
+                        containerSize: containerSize,
+                        safeInsets: safeInsets
+                    ),
+                    containerSize: containerSize,
+                    safeInsets: safeInsets
                 )
-                lensCenter = clamped
             }
             .onEnded { _ in
-                lastCommittedLensCenter = lensCenter
+                lastCommittedLensCenterRatio = lensCenterRatio
             }
+    }
+
+    private func clampedLensCenter(
+        ratio: CGPoint,
+        containerSize: CGSize,
+        safeInsets: EdgeInsets
+    ) -> CGPoint {
+        let bounds = movementBounds(containerSize: containerSize, safeInsets: safeInsets)
+
+        return clampedLensCenter(
+            CGPoint(
+                x: bounds.minX + ratio.x * bounds.width,
+                y: bounds.minY + ratio.y * bounds.height
+            ),
+            containerSize: containerSize,
+            safeInsets: safeInsets
+        )
+    }
+
+    private func clampedLensCenter(
+        _ proposed: CGPoint,
+        containerSize: CGSize,
+        safeInsets: EdgeInsets
+    ) -> CGPoint {
+        let bounds = movementBounds(containerSize: containerSize, safeInsets: safeInsets)
+
+        return CGPoint(
+            x: min(max(proposed.x, bounds.minX), bounds.maxX),
+            y: min(max(proposed.y, bounds.minY), bounds.maxY)
+        )
+    }
+
+    private func lensCenterRatio(
+        for center: CGPoint,
+        containerSize: CGSize,
+        safeInsets: EdgeInsets
+    ) -> CGPoint {
+        let bounds = movementBounds(containerSize: containerSize, safeInsets: safeInsets)
+
+        return CGPoint(
+            x: (center.x - bounds.minX) / max(bounds.width, 1),
+            y: (center.y - bounds.minY) / max(bounds.height, 1)
+        )
+    }
+
+    private func movementBounds(containerSize: CGSize, safeInsets: EdgeInsets) -> CGRect {
+        let minX = safeInsets.leading + lensSettings.radius
+        let maxX = max(minX, containerSize.width - safeInsets.trailing - lensSettings.radius)
+        let minY = safeInsets.top + lensSettings.radius
+        let visualMargin: CGFloat = 6
+        let maxY = max(minY, containerSize.height + safeInsets.bottom - visualMargin - lensSettings.radius)
+
+        return CGRect(
+            x: minX,
+            y: minY,
+            width: max(maxX - minX, 1),
+            height: max(maxY - minY, 1)
+        )
     }
 }
 
