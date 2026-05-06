@@ -1,6 +1,7 @@
 import SwiftUI
+import SomeLens
 
-public struct SnapshotRefreshRateControl: View {
+struct SnapshotRefreshRateControl: View {
     @Binding private var refreshRate: SnapshotRefreshRate
     @Binding private var isInteractionBlocked: Bool
     private let safeInsets: EdgeInsets
@@ -8,7 +9,7 @@ public struct SnapshotRefreshRateControl: View {
     @State private var isCustomEditorPresented = false
     @State private var customMillisecondsText = "200"
 
-    public init(
+    init(
         refreshRate: Binding<SnapshotRefreshRate>,
         isInteractionBlocked: Binding<Bool> = .constant(false),
         safeInsets: EdgeInsets = EdgeInsets()
@@ -18,7 +19,7 @@ public struct SnapshotRefreshRateControl: View {
         self.safeInsets = safeInsets
     }
 
-    public var body: some View {
+    var body: some View {
         ZStack(alignment: .topLeading) {
             button
                 .disabled(isCustomEditorPresented)
@@ -114,26 +115,26 @@ public struct SnapshotRefreshRateControl: View {
     }
 }
 
-public struct SnapshotRefreshRatePickerShade: View {
+struct SnapshotRefreshRatePickerShade: View {
     private let onDismiss: () -> Void
 
-    public init(onDismiss: @escaping () -> Void) {
+    init(onDismiss: @escaping () -> Void) {
         self.onDismiss = onDismiss
     }
 
-    public var body: some View {
+    var body: some View {
         Color.black.opacity(0.18)
             .ignoresSafeArea()
             .onTapGesture(perform: onDismiss)
     }
 }
 
-public struct SnapshotRefreshRatePicker: View {
+struct SnapshotRefreshRatePicker: View {
     @Binding private var selectedRate: SnapshotRefreshRate
     private let onSelect: () -> Void
     private let onSelectCustom: () -> Void
 
-    public init(
+    init(
         selectedRate: Binding<SnapshotRefreshRate>,
         onSelect: @escaping () -> Void,
         onSelectCustom: @escaping () -> Void
@@ -143,7 +144,7 @@ public struct SnapshotRefreshRatePicker: View {
         self.onSelectCustom = onSelectCustom
     }
 
-    public var body: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             pickerButton(title: SnapshotRefreshRate.never.displayTitle, rate: .never)
             pickerButton(title: SnapshotRefreshRate.automatic.displayTitle, rate: .automatic)
@@ -183,16 +184,16 @@ public struct SnapshotRefreshRatePicker: View {
     }
 }
 
-public struct SnapshotRefreshRateCustomIntervalEditor: View {
+struct SnapshotRefreshRateCustomIntervalEditor: View {
     @Binding private var millisecondsText: String
     private let onCommit: (Int) -> Void
 
-    public init(millisecondsText: Binding<String>, onCommit: @escaping (Int) -> Void) {
+    init(millisecondsText: Binding<String>, onCommit: @escaping (Int) -> Void) {
         self._millisecondsText = millisecondsText
         self.onCommit = onCommit
     }
 
-    public var body: some View {
+    var body: some View {
         ZStack {
             Color.black.opacity(0.32)
                 .ignoresSafeArea()
@@ -231,7 +232,7 @@ public struct SnapshotRefreshRateCustomIntervalEditor: View {
     }
 }
 
-public extension SnapshotRefreshRate {
+extension SnapshotRefreshRate {
     var displayTitle: String {
         switch self {
         case .never:

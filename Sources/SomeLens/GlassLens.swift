@@ -21,8 +21,16 @@ public struct GlassLens: View, Loggable {
         self.settings = settings
     }
 
-    private var diameter: CGFloat {
-        settings.radius * 2
+    private var lensSize: CGSize {
+        CGSize(width: max(settings.width, 1), height: max(settings.height, 1))
+    }
+
+    private var shaderRadius: CGFloat {
+        min(lensSize.width, lensSize.height) / 2
+    }
+
+    private var lensShape: LensPathShape {
+        LensPathShape(path: settings.path)
     }
 
     public var body: some View {
@@ -33,27 +41,27 @@ public struct GlassLens: View, Loggable {
         ZStack {
             Group {
                 if let snapshot {
-                    cropCircle(snapshot: snapshot)
+                    cropPath(snapshot: snapshot)
                 } else {
                     Color.clear
                 }
             }
-            .frame(width: diameter, height: diameter)
+            .frame(width: lensSize.width, height: lensSize.height)
             .layerEffect(lensShader, maxSampleOffset: sampleOffset)
-            .clipShape(Circle())
+            .clipShape(lensShape)
 
-            Circle()
+            lensShape
                 .stroke(.white.opacity(0.45), lineWidth: settings.ringWidth)
                 .blur(radius: 0.2)
-                .frame(width: diameter, height: diameter)
+                .frame(width: lensSize.width, height: lensSize.height)
                 .overlay(
-                    Circle()
+                    lensShape
                         .strokeBorder(.white.opacity(0.12), lineWidth: 0.5)
-                        .frame(width: diameter, height: diameter)
+                        .frame(width: lensSize.width, height: lensSize.height)
                 )
         }
-        .frame(width: diameter, height: diameter)
-        .contentShape(Circle())
+        .frame(width: lensSize.width, height: lensSize.height)
+        .contentShape(lensShape)
         .position(x: center.x, y: center.y)
         .opacity(hasSnapshot ? 1 : 0)
         .allowsHitTesting(hasSnapshot)
@@ -69,19 +77,22 @@ public struct GlassLens: View, Loggable {
         }
     }
 
-    private func cropCircle(snapshot: SomeLensPlatformImage) -> some View {
+    private func cropPath(snapshot: SomeLensPlatformImage) -> some View {
         let verticalCorrection: CGFloat = 1.5
-        let originX = center.x - settings.radius - safeInsets.leading
-        let originY = center.y - settings.radius - safeInsets.top + verticalCorrection
-        let cropDiameter = max(settings.radius * 2, 1)
+        let cropSize = lensSize
+        let originX = center.x - cropSize.width / 2 - safeInsets.leading
+        let originY = center.y - cropSize.height / 2 - safeInsets.top + verticalCorrection
+        let cropRect = CGRect(origin: .zero, size: cropSize)
+        let cropPath = settings.path(cropRect).cgPath
 
         #if os(macOS)
-        d("macOS crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter)) offset=\(format(CGPoint(x: -originX, y: -originY)))")
+        d("macOS crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) size=\(format(cropSize)) offset=\(format(CGPoint(x: -originX, y: -originY)))")
 
-        let cropped = NSImage(size: CGSize(width: cropDiameter, height: cropDiameter), flipped: true) { rect in
+        let cropped = NSImage(size: cropSize, flipped: true) { rect in
             NSColor.systemOrange.withAlphaComponent(0.3).setFill()
             rect.fill()
-            NSBezierPath(ovalIn: rect).addClip()
+            NSGraphicsContext.current?.cgContext.addPath(cropPath)
+            NSGraphicsContext.current?.cgContext.clip()
             snapshot.draw(
                 in: CGRect(
                     x: -originX,
@@ -101,36 +112,37 @@ public struct GlassLens: View, Loggable {
         return platformImage(cropped)
             .resizable()
             .scaledToFill()
-            .frame(width: cropDiameter, height: cropDiameter)
+            .frame(width: cropSize.width, height: cropSize.height)
             .clipped()
         #elseif os(iOS)
-        d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter))")
+        d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) size=\(format(cropSize))")
 
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = snapshot.scale
         format.opaque = false
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropDiameter, height: cropDiameter), format: format)
+        let renderer = UIGraphicsImageRenderer(size: cropSize, format: format)
         let cropped = renderer.image { context in
             context.cgContext.setFillColor(UIColor.systemOrange.withAlphaComponent(0.3).cgColor)
-            context.cgContext.fill(CGRect(x: 0, y: 0, width: cropDiameter, height: cropDiameter))
-            UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: cropDiameter, height: cropDiameter)).addClip()
+            context.cgContext.fill(cropRect)
+            context.cgContext.addPath(cropPath)
+            context.cgContext.clip()
             snapshot.draw(at: CGPoint(x: -originX, y: -originY))
         }
 
         return platformImage(cropped)
             .resizable()
             .scaledToFill()
-            .frame(width: cropDiameter, height: cropDiameter)
+            .frame(width: cropSize.width, height: cropSize.height)
             .clipped()
         #endif
     }
 
     private var lensShader: Shader {
-        let localCenter = SIMD2<Float>(Float(settings.radius), Float(settings.radius))
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
         let arguments: [Shader.Argument] = [
             .float(localCenter.x),
             .float(localCenter.y),
-            .float(Float(settings.radius)),
+            .float(Float(shaderRadius)),
             .float(Float(settings.refraction)),
             .float(Float(settings.edgeReflection))
         ]
@@ -141,7 +153,7 @@ public struct GlassLens: View, Loggable {
     }
 
     private var sampleOffset: CGSize {
-        let effectRadius = settings.radius * 1.15
+        let effectRadius = shaderRadius * 1.15
         return CGSize(
             width: effectRadius * settings.refraction + 10,
             height: effectRadius * settings.refraction + 10
@@ -163,4 +175,20 @@ private func platformImage(_ image: SomeLensPlatformImage) -> Image {
     #elseif os(macOS)
     Image(nsImage: image)
     #endif
+}
+
+private struct LensPathShape: InsettableShape {
+    let path: GlassLensSettings.LensPathProvider
+    var insetAmount: CGFloat = 0
+
+    func path(in rect: CGRect) -> Path {
+        let insetRect = rect.insetBy(dx: insetAmount, dy: insetAmount)
+        return path(insetRect)
+    }
+
+    func inset(by amount: CGFloat) -> some InsettableShape {
+        var shape = self
+        shape.insetAmount += amount
+        return shape
+    }
 }

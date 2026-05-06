@@ -65,7 +65,7 @@ struct LensDemoScreen: View {
     @State private var snapshotRefreshRate: SnapshotRefreshRate = .automatic
     @State private var isRefreshRateControlActive = false
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    private let lensSettings = GlassLensSettings()
+    private let lensSettings = GlassLensSettings.circle()
 
     var body: some View {
         GeometryReader { geo in
@@ -181,11 +181,13 @@ struct LensDemoScreen: View {
     }
 
     private func movementBounds(containerSize: CGSize, safeInsets: EdgeInsets) -> CGRect {
-        let minX = safeInsets.leading + lensSettings.radius
-        let maxX = max(minX, containerSize.width - safeInsets.trailing - lensSettings.radius)
-        let minY = safeInsets.top + lensSettings.radius
+        let halfLensWidth = lensSettings.width / 2
+        let halfLensHeight = lensSettings.height / 2
+        let minX = safeInsets.leading + halfLensWidth
+        let maxX = max(minX, containerSize.width - safeInsets.trailing - halfLensWidth)
+        let minY = safeInsets.top + halfLensHeight
         let visualMargin: CGFloat = 6
-        let maxY = max(minY, containerSize.height + safeInsets.bottom - visualMargin - lensSettings.radius)
+        let maxY = max(minY, containerSize.height + safeInsets.bottom - visualMargin - halfLensHeight)
 
         return CGRect(
             x: minX,

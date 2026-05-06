@@ -2,7 +2,7 @@
 
 SomeLens is a SwiftUI glass UI component library focused on lens-like visual effects for Apple platforms.
 
-The package is intended to provide reusable glass components that can be dropped into SwiftUI interfaces on iOS and macOS. Its first direction is a movable optical lens effect with configurable radius, refraction, edge reflection, rim styling, and magnification.
+The package is intended to provide reusable glass components that can be dropped into SwiftUI interfaces on iOS and macOS. Its first direction is a movable optical lens effect with configurable size, path, refraction, edge reflection, rim styling, and magnification.
 
 ## Goals
 
@@ -26,9 +26,11 @@ struct ExampleView: View {
             content
 
             GlassLens(
-                center: $lensCenter,
-                radius: 80,
-                refraction: 1.2
+                center: lensCenter,
+                settings: GlassLensSettings.circle(
+                    diameter: 160,
+                    refraction: 1.2
+                )
             )
         }
     }
