@@ -32,12 +32,8 @@ public struct GlassLens: View, Loggable {
 
         ZStack {
             Group {
-                if let snapshot, let cropped = cropCircle(snapshot: snapshot) {
-                    platformImage(cropped)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: diameter, height: diameter)
-                        .clipped()
+                if let snapshot {
+                    cropCircle(snapshot: snapshot)
                 } else {
                     Color.clear
                 }
@@ -73,79 +69,40 @@ public struct GlassLens: View, Loggable {
         }
     }
 
-    private func cropCircle(snapshot: SomeLensPlatformImage) -> SomeLensPlatformImage? {
-        #if os(iOS)
-        let diameter = max(settings.radius * 2, 1)
+    private func cropCircle(snapshot: SomeLensPlatformImage) -> some View {
         let verticalCorrection: CGFloat = 1.5
         let originX = center.x - settings.radius - safeInsets.leading
         let originY = center.y - settings.radius - safeInsets.top + verticalCorrection
+
+        #if os(macOS)
+        d("macOS crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter)) offset=\(format(CGPoint(x: -originX, y: -originY)))")
+
+        return platformImage(snapshot)
+            .resizable()
+            .frame(width: snapshot.size.width, height: snapshot.size.height)
+            .offset(x: -originX, y: -originY)
+            .frame(width: diameter, height: diameter, alignment: .topLeading)
+            .clipped()
+        #elseif os(iOS)
+        let cropDiameter = max(settings.radius * 2, 1)
         d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter))")
 
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = snapshot.scale
         format.opaque = false
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: diameter, height: diameter), format: format)
-        return renderer.image { context in
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: cropDiameter, height: cropDiameter), format: format)
+        let cropped = renderer.image { context in
             context.cgContext.setFillColor(UIColor.systemOrange.withAlphaComponent(0.3).cgColor)
-            context.cgContext.fill(CGRect(x: 0, y: 0, width: diameter, height: diameter))
-            UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: diameter, height: diameter)).addClip()
+            context.cgContext.fill(CGRect(x: 0, y: 0, width: cropDiameter, height: cropDiameter))
+            UIBezierPath(ovalIn: CGRect(x: 0, y: 0, width: cropDiameter, height: cropDiameter)).addClip()
             snapshot.draw(at: CGPoint(x: -originX, y: -originY))
         }
-        #elseif os(macOS)
-        let diameter = max(settings.radius * 2, 1)
-        let verticalCorrection: CGFloat = 1.5
-        let originX = center.x - settings.radius - safeInsets.leading
-        let originY = center.y - settings.radius - safeInsets.top + verticalCorrection
-        d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter))")
 
-        let scale = snapshot.backingScale
-        let pixelWidth = max(Int((diameter * scale).rounded(.up)), 1)
-        let pixelHeight = max(Int((diameter * scale).rounded(.up)), 1)
-        guard let bitmap = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: pixelWidth,
-            pixelsHigh: pixelHeight,
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: .deviceRGB,
-            bytesPerRow: 0,
-            bitsPerPixel: 0
-        ) else {
-            i("crop failed: could not allocate macOS bitmap")
-            return nil
-        }
-
-        bitmap.size = CGSize(width: diameter, height: diameter)
-        guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
-            i("crop failed: could not create macOS graphics context")
-            return nil
-        }
-
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = context
-        let cgContext = context.cgContext
-        cgContext.scaleBy(x: scale, y: scale)
-        cgContext.translateBy(x: 0, y: diameter)
-        cgContext.scaleBy(x: 1, y: -1)
-        cgContext.setFillColor(NSColor.systemOrange.withAlphaComponent(0.3).cgColor)
-        cgContext.fill(CGRect(x: 0, y: 0, width: diameter, height: diameter))
-        cgContext.addEllipse(in: CGRect(x: 0, y: 0, width: diameter, height: diameter))
-        cgContext.clip()
-        snapshot.draw(
-            in: CGRect(x: -originX, y: -originY, width: snapshot.size.width, height: snapshot.size.height),
-            from: CGRect(origin: .zero, size: snapshot.size),
-            operation: .sourceOver,
-            fraction: 1
-        )
-        NSGraphicsContext.restoreGraphicsState()
-
-        let image = NSImage(size: CGSize(width: diameter, height: diameter))
-        image.addRepresentation(bitmap)
-        return image
-        #else
-        return nil
+        return platformImage(cropped)
+            .resizable()
+            .scaledToFill()
+            .frame(width: cropDiameter, height: cropDiameter)
+            .clipped()
         #endif
     }
 
@@ -188,16 +145,3 @@ private func platformImage(_ image: SomeLensPlatformImage) -> Image {
     Image(nsImage: image)
     #endif
 }
-
-#if os(macOS)
-private extension NSImage {
-    var backingScale: CGFloat {
-        representations
-            .compactMap { representation -> CGFloat? in
-                guard representation.size.width > 0 else { return nil }
-                return CGFloat(representation.pixelsWide) / representation.size.width
-            }
-            .max() ?? NSScreen.main?.backingScaleFactor ?? 1
-    }
-}
-#endif
