@@ -21,6 +21,11 @@
 			path = Lens;
 			sourceTree = "<group>";
 		};
+		FB7C1A012F33000100A1B2C3 /* Sources */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Sources;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -47,6 +52,7 @@
 			isa = PBXGroup;
 			children = (
 				FB5B9A012EC256780012EFE2 /* Lens */,
+				FB7C1A012F33000100A1B2C3 /* Sources */,
 				FB4A71542EC27F4D00A8E7A1 /* Frameworks */,
 				FB5B9A002EC256780012EFE2 /* Products */,
 			);
@@ -77,6 +83,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FB5B9A012EC256780012EFE2 /* Lens */,
+				FB7C1A012F33000100A1B2C3 /* Sources */,
 			);
 			name = Lens;
 			packageProductDependencies = (
@@ -93,7 +100,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					FB5B99FE2EC256780012EFE2 = {
 						CreatedOnToolsVersion = 26.1;
@@ -199,6 +206,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -256,6 +264,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
