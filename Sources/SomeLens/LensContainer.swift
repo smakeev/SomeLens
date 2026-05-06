@@ -44,6 +44,11 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
                 captureSnapshot(reason: "appear", size: size, scale: scale)
                 snapshotProvider.startTimer(refreshRate: snapshotRefreshRate)
             }
+            .onChange(of: snapshotRefreshRate) { newRefreshRate in
+                i("rate changed rate=\(newRefreshRate.debugDescription)")
+                captureSnapshot(reason: "rateChanged", size: size, scale: scale)
+                snapshotProvider.startTimer(refreshRate: newRefreshRate)
+            }
             .onDisappear {
                 snapshotProvider.stopTimer()
             }
@@ -95,6 +100,8 @@ private extension SnapshotRefreshRate {
             "relaxed(0.250s)"
         case .slow:
             "slow(0.500s)"
+        case .custom(let milliseconds):
+            "custom(\(milliseconds)ms)"
         }
     }
 }

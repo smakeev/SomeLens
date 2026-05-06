@@ -62,6 +62,8 @@ struct LensDemoScreen: View {
     @State private var counterValue: Double = 0
     @State private var counterDirection: Double = 1
     @State private var lastCommittedLensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
+    @State private var snapshotRefreshRate: SnapshotRefreshRate = .automatic
+    @State private var isRefreshRateControlActive = false
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
     private let lensSettings = GlassLensSettings()
 
@@ -76,15 +78,24 @@ struct LensDemoScreen: View {
                 safeInsets: safeInsets
             )
 
-            LensContainer(snapshotRefreshRate: .automatic) {
-                DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea()
-            } lenses: {
-                GlassLens(center: lensCenter, settings: lensSettings)
-                    .gesture(lensDragGesture(containerSize: size, safeInsets: safeInsets))
+            ZStack(alignment: .topLeading) {
+                LensContainer(snapshotRefreshRate: snapshotRefreshRate) {
+                    DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .ignoresSafeArea()
+                } lenses: {
+                    GlassLens(center: lensCenter, settings: lensSettings)
+                        .gesture(lensDragGesture(containerSize: size, safeInsets: safeInsets))
+                }
+                .ignoresSafeArea()
+                .disabled(isRefreshRateControlActive)
+
+                SnapshotRefreshRateControl(
+                    refreshRate: $snapshotRefreshRate,
+                    isInteractionBlocked: $isRefreshRateControlActive,
+                    safeInsets: safeInsets
+                )
             }
-            .ignoresSafeArea()
             .onReceive(counterTimer) { _ in
                 var next = counterValue + counterDirection * 1
                 if next > 100 {
