@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		FB4A71562EC27F4D00A8E7A1 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB4A71552EC27F4D00A8E7A1 /* MetalKit.framework */; };
+		FB8C10022F56000100A1B2C3 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB4A71552EC27F4D00A8E7A1 /* MetalKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		FB4A71552EC27F4D00A8E7A1 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		FB5B99FF2EC256780012EFE2 /* Lens.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Lens.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FB8C10012F56000100A1B2C3 /* Lens-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Lens-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +36,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB4A71562EC27F4D00A8E7A1 /* MetalKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FB8C10032F56000100A1B2C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FB8C10022F56000100A1B2C3 /* MetalKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -62,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				FB5B99FF2EC256780012EFE2 /* Lens.app */,
+				FB8C10012F56000100A1B2C3 /* Lens-macOS.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -92,6 +103,29 @@
 			productReference = FB5B99FF2EC256780012EFE2 /* Lens.app */;
 			productType = "com.apple.product-type.application";
 		};
+		FB8C10062F56000100A1B2C3 /* Lens-macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FB8C10072F56000100A1B2C3 /* Build configuration list for PBXNativeTarget "Lens-macOS" */;
+			buildPhases = (
+				FB8C10042F56000100A1B2C3 /* Sources */,
+				FB8C10032F56000100A1B2C3 /* Frameworks */,
+				FB8C10052F56000100A1B2C3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FB5B9A012EC256780012EFE2 /* Lens */,
+				FB7C1A012F33000100A1B2C3 /* Sources */,
+			);
+			name = "Lens-macOS";
+			packageProductDependencies = (
+			);
+			productName = "Lens-macOS";
+			productReference = FB8C10012F56000100A1B2C3 /* Lens-macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -103,6 +137,9 @@
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					FB5B99FE2EC256780012EFE2 = {
+						CreatedOnToolsVersion = 26.1;
+					};
+					FB8C10062F56000100A1B2C3 = {
 						CreatedOnToolsVersion = 26.1;
 					};
 				};
@@ -122,6 +159,7 @@
 			projectRoot = "";
 			targets = (
 				FB5B99FE2EC256780012EFE2 /* Lens */,
+				FB8C10062F56000100A1B2C3 /* Lens-macOS */,
 			);
 		};
 /* End PBXProject section */
@@ -134,10 +172,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FB8C10052F56000100A1B2C3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		FB5B99FB2EC256780012EFE2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FB8C10042F56000100A1B2C3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -294,6 +346,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = someprojects.Lens;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -327,12 +380,74 @@
 				PRODUCT_BUNDLE_IDENTIFIER = someprojects.Lens;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		FB8C10082F56000100A1B2C3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 63V9SX37YA;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "someprojects.Lens-macOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		FB8C10092F56000100A1B2C3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 63V9SX37YA;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "someprojects.Lens-macOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -353,6 +468,15 @@
 			buildConfigurations = (
 				FB5B9A0B2EC2567A0012EFE2 /* Debug */,
 				FB5B9A0C2EC2567A0012EFE2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FB8C10072F56000100A1B2C3 /* Build configuration list for PBXNativeTarget "Lens-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FB8C10082F56000100A1B2C3 /* Debug */,
+				FB8C10092F56000100A1B2C3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -92,7 +92,58 @@ public struct GlassLens: View, Loggable {
             snapshot.draw(at: CGPoint(x: -originX, y: -originY))
         }
         #elseif os(macOS)
-        return nil
+        let diameter = max(settings.radius * 2, 1)
+        let verticalCorrection: CGFloat = 1.5
+        let originX = center.x - settings.radius - safeInsets.leading
+        let originY = center.y - settings.radius - safeInsets.top + verticalCorrection
+        d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter))")
+
+        let scale = snapshot.backingScale
+        let pixelWidth = max(Int((diameter * scale).rounded(.up)), 1)
+        let pixelHeight = max(Int((diameter * scale).rounded(.up)), 1)
+        guard let bitmap = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: pixelWidth,
+            pixelsHigh: pixelHeight,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ) else {
+            i("crop failed: could not allocate macOS bitmap")
+            return nil
+        }
+
+        bitmap.size = CGSize(width: diameter, height: diameter)
+        guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
+            i("crop failed: could not create macOS graphics context")
+            return nil
+        }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        let cgContext = context.cgContext
+        cgContext.scaleBy(x: scale, y: scale)
+        cgContext.translateBy(x: 0, y: diameter)
+        cgContext.scaleBy(x: 1, y: -1)
+        cgContext.setFillColor(NSColor.systemOrange.withAlphaComponent(0.3).cgColor)
+        cgContext.fill(CGRect(x: 0, y: 0, width: diameter, height: diameter))
+        cgContext.addEllipse(in: CGRect(x: 0, y: 0, width: diameter, height: diameter))
+        cgContext.clip()
+        snapshot.draw(
+            in: CGRect(x: -originX, y: -originY, width: snapshot.size.width, height: snapshot.size.height),
+            from: CGRect(origin: .zero, size: snapshot.size),
+            operation: .sourceOver,
+            fraction: 1
+        )
+        NSGraphicsContext.restoreGraphicsState()
+
+        let image = NSImage(size: CGSize(width: diameter, height: diameter))
+        image.addRepresentation(bitmap)
+        return image
         #else
         return nil
         #endif
@@ -137,3 +188,16 @@ private func platformImage(_ image: SomeLensPlatformImage) -> Image {
     Image(nsImage: image)
     #endif
 }
+
+#if os(macOS)
+private extension NSImage {
+    var backingScale: CGFloat {
+        representations
+            .compactMap { representation -> CGFloat? in
+                guard representation.size.width > 0 else { return nil }
+                return CGFloat(representation.pixelsWide) / representation.size.width
+            }
+            .max() ?? NSScreen.main?.backingScaleFactor ?? 1
+    }
+}
+#endif
