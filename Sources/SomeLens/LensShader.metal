@@ -1,6 +1,6 @@
 //
-//  MyLenseShader.metal
-//  Lens
+//  LensShader.metal
+//  SomeLens
 //
 //  Created by Sergey Makeev on 10.11.2025.
 //
@@ -30,7 +30,7 @@ using namespace metal;
 
     // Normalized distance from center (0 = center, 1 = rim, >1 = extended area)
     float nd = dist / max(radius, 1e-5);
-    
+
     // Fade out alpha beyond the main radius
     half alphaFade = 1.0h;
     if (dist > radius) {

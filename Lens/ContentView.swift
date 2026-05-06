@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import SomeLens
 
 struct ContentView: View {
     var body: some View {

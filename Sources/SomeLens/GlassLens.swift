@@ -135,7 +135,7 @@ public struct GlassLens: View, Loggable {
             .float(Float(settings.edgeReflection))
         ]
 
-        let library = ShaderLibrary.default
+        let library = ShaderLibrary.bundle(.module)
         let function = library[dynamicMember: "lensRefraction"]
         return Shader(function: function, arguments: arguments)
     }

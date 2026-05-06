@@ -7,6 +7,7 @@
 
 import SwiftUI
 import OSLog
+import SomeLens
 
 @main
 struct LensApp: App {

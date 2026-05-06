@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		FB4A71562EC27F4D00A8E7A1 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB4A71552EC27F4D00A8E7A1 /* MetalKit.framework */; };
+		FB7C1A032F33000100A1B2C3 /* SomeLens in Frameworks */ = {isa = PBXBuildFile; productRef = FB7C1A022F33000100A1B2C3 /* SomeLens */; };
+		FB7C1A052F33000100A1B2C3 /* SomeLens in Frameworks */ = {isa = PBXBuildFile; productRef = FB7C1A042F33000100A1B2C3 /* SomeLens */; };
 		FB8C10022F56000100A1B2C3 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB4A71552EC27F4D00A8E7A1 /* MetalKit.framework */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +38,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB4A71562EC27F4D00A8E7A1 /* MetalKit.framework in Frameworks */,
+				FB7C1A032F33000100A1B2C3 /* SomeLens in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -44,6 +47,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB8C10022F56000100A1B2C3 /* MetalKit.framework in Frameworks */,
+				FB7C1A052F33000100A1B2C3 /* SomeLens in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,10 +98,10 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FB5B9A012EC256780012EFE2 /* Lens */,
-				FB7C1A012F33000100A1B2C3 /* Sources */,
 			);
 			name = Lens;
 			packageProductDependencies = (
+				FB7C1A022F33000100A1B2C3 /* SomeLens */,
 			);
 			productName = Lens;
 			productReference = FB5B99FF2EC256780012EFE2 /* Lens.app */;
@@ -117,10 +121,10 @@
 			);
 			fileSystemSynchronizedGroups = (
 				FB5B9A012EC256780012EFE2 /* Lens */,
-				FB7C1A012F33000100A1B2C3 /* Sources */,
 			);
 			name = "Lens-macOS";
 			packageProductDependencies = (
+				FB7C1A042F33000100A1B2C3 /* SomeLens */,
 			);
 			productName = "Lens-macOS";
 			productReference = FB8C10012F56000100A1B2C3 /* Lens-macOS.app */;
@@ -153,6 +157,9 @@
 			);
 			mainGroup = FB5B99F62EC256780012EFE2;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FB7C1A002F33000100A1B2C3 /* XCLocalSwiftPackageReference "" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = FB5B9A002EC256780012EFE2 /* Products */;
 			projectDirPath = "";
@@ -482,6 +489,26 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		FB7C1A002F33000100A1B2C3 /* XCLocalSwiftPackageReference "" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FB7C1A022F33000100A1B2C3 /* SomeLens */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FB7C1A002F33000100A1B2C3 /* XCLocalSwiftPackageReference "" */;
+			productName = SomeLens;
+		};
+		FB7C1A042F33000100A1B2C3 /* SomeLens */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FB7C1A002F33000100A1B2C3 /* XCLocalSwiftPackageReference "" */;
+			productName = SomeLens;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = FB5B99F72EC256780012EFE2 /* Project object */;
 }
