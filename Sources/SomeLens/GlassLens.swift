@@ -39,8 +39,8 @@ public struct GlassLens: View, Loggable {
                 }
             }
             .frame(width: diameter, height: diameter)
-            .clipShape(Circle())
             .layerEffect(lensShader, maxSampleOffset: sampleOffset)
+            .clipShape(Circle())
 
             Circle()
                 .stroke(.white.opacity(0.45), lineWidth: settings.ringWidth)
@@ -73,18 +73,37 @@ public struct GlassLens: View, Loggable {
         let verticalCorrection: CGFloat = 1.5
         let originX = center.x - settings.radius - safeInsets.leading
         let originY = center.y - settings.radius - safeInsets.top + verticalCorrection
+        let cropDiameter = max(settings.radius * 2, 1)
 
         #if os(macOS)
         d("macOS crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter)) offset=\(format(CGPoint(x: -originX, y: -originY)))")
 
-        return platformImage(snapshot)
+        let cropped = NSImage(size: CGSize(width: cropDiameter, height: cropDiameter), flipped: true) { rect in
+            NSColor.systemOrange.withAlphaComponent(0.3).setFill()
+            rect.fill()
+            NSBezierPath(ovalIn: rect).addClip()
+            snapshot.draw(
+                in: CGRect(
+                    x: -originX,
+                    y: -originY,
+                    width: snapshot.size.width,
+                    height: snapshot.size.height
+                ),
+                from: CGRect(origin: .zero, size: snapshot.size),
+                operation: .sourceOver,
+                fraction: 1,
+                respectFlipped: true,
+                hints: [.interpolation: NSImageInterpolation.high]
+            )
+            return true
+        }
+
+        return platformImage(cropped)
             .resizable()
-            .frame(width: snapshot.size.width, height: snapshot.size.height)
-            .offset(x: -originX, y: -originY)
-            .frame(width: diameter, height: diameter, alignment: .topLeading)
+            .scaledToFill()
+            .frame(width: cropDiameter, height: cropDiameter)
             .clipped()
         #elseif os(iOS)
-        let cropDiameter = max(settings.radius * 2, 1)
         d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) diameter=\(Int(diameter))")
 
         let format = UIGraphicsImageRendererFormat.default()
