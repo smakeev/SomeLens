@@ -63,9 +63,14 @@ struct LensDemoScreen: View {
     @State private var counterDirection: Double = 1
     @State private var lastCommittedLensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
     @State private var snapshotRefreshRate: SnapshotRefreshRate = .automatic
+    @State private var selectedPath: LensDemoPathOption = .circle
     @State private var isRefreshRateControlActive = false
+    @State private var isPathControlActive = false
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
-    private let lensSettings = GlassLensSettings.circle()
+
+    private var lensSettings: GlassLensSettings {
+        selectedPath.settings
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -88,11 +93,17 @@ struct LensDemoScreen: View {
                         .gesture(lensDragGesture(containerSize: size, safeInsets: safeInsets))
                 }
                 .ignoresSafeArea()
-                .disabled(isRefreshRateControlActive)
+                .disabled(isRefreshRateControlActive || isPathControlActive)
 
                 SnapshotRefreshRateControl(
                     refreshRate: $snapshotRefreshRate,
                     isInteractionBlocked: $isRefreshRateControlActive,
+                    safeInsets: safeInsets
+                )
+
+                LensPathSelectorControl(
+                    selectedPath: $selectedPath,
+                    isInteractionBlocked: $isPathControlActive,
                     safeInsets: safeInsets
                 )
             }

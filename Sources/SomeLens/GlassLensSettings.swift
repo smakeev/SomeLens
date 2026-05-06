@@ -17,7 +17,7 @@ public struct GlassLensSettings {
     public init(
         width: CGFloat = 160,
         height: CGFloat = 160,
-        path: @escaping LensPathProvider = GlassLensSettings.circlePath,
+        path: @escaping @Sendable (CGRect) -> Path = GlassLensSettings.circlePath,
         refraction: CGFloat = 1.2,
         edgeReflection: CGFloat = 0.8,
         ringWidth: CGFloat = 1.0

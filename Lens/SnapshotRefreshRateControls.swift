@@ -2,6 +2,8 @@ import SwiftUI
 import SomeLens
 
 struct SnapshotRefreshRateControl: View {
+    static let buttonWidth: CGFloat = 116
+
     @Binding private var refreshRate: SnapshotRefreshRate
     @Binding private var isInteractionBlocked: Bool
     private let safeInsets: EdgeInsets
@@ -86,7 +88,8 @@ struct SnapshotRefreshRateControl: View {
             Text(refreshRate.displayTitle)
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(.primary)
-                .padding(.horizontal, 12)
+                .lineLimit(1)
+                .frame(width: Self.buttonWidth)
                 .padding(.vertical, 8)
                 .background(.regularMaterial, in: Capsule())
                 .shadow(color: .black.opacity(0.2), radius: 8, y: 4)

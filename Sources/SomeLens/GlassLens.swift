@@ -26,7 +26,7 @@ public struct GlassLens: View, Loggable {
     }
 
     private var shaderRadius: CGFloat {
-        min(lensSize.width, lensSize.height) / 2
+        hypot(lensSize.width, lensSize.height) / 2
     }
 
     private var lensShape: LensPathShape {
