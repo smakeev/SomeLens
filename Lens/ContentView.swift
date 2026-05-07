@@ -64,21 +64,27 @@ struct LensDemoScreen: View {
     @State private var lastCommittedLensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
     @State private var snapshotRefreshRate: SnapshotRefreshRate = .automatic
     @State private var selectedPath: LensDemoPathOption = .circle
+    @State private var selectedShader: LensDemoShaderOption = .refraction
     @State private var animatesPathChanges = true
     @State private var isRefreshRatePickerPresented = false
     @State private var isCustomRefreshRateEditorPresented = false
     @State private var customMillisecondsText = "200"
     @State private var isPathPickerPresented = false
+    @State private var isShaderPickerPresented = false
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     private var lensSettings: GlassLensSettings {
         var settings = selectedPath.settings
         settings.animatesPathChanges = animatesPathChanges
+        settings.shaders = selectedShader.shaders
         return settings
     }
 
     private var isControlMenuActive: Bool {
-        isRefreshRatePickerPresented || isCustomRefreshRateEditorPresented || isPathPickerPresented
+        isRefreshRatePickerPresented
+            || isCustomRefreshRateEditorPresented
+            || isPathPickerPresented
+            || isShaderPickerPresented
     }
 
     var body: some View {
@@ -102,11 +108,13 @@ struct LensDemoScreen: View {
                         LensDemoControlsRow(
                             refreshRate: snapshotRefreshRate,
                             selectedPath: selectedPath,
+                            selectedShader: selectedShader,
                             animatesPathChanges: $animatesPathChanges,
                             safeInsets: safeInsets,
                             onRefreshRateTap: {
                                 withAnimation {
                                     isPathPickerPresented = false
+                                    isShaderPickerPresented = false
                                     isRefreshRatePickerPresented.toggle()
                                 }
                             },
@@ -114,7 +122,16 @@ struct LensDemoScreen: View {
                                 withAnimation {
                                     isRefreshRatePickerPresented = false
                                     isCustomRefreshRateEditorPresented = false
+                                    isShaderPickerPresented = false
                                     isPathPickerPresented.toggle()
+                                }
+                            },
+                            onShaderTap: {
+                                withAnimation {
+                                    isRefreshRatePickerPresented = false
+                                    isCustomRefreshRateEditorPresented = false
+                                    isPathPickerPresented = false
+                                    isShaderPickerPresented.toggle()
                                 }
                             }
                         )
@@ -129,10 +146,12 @@ struct LensDemoScreen: View {
                 LensDemoControlsPresentationLayer(
                     refreshRate: $snapshotRefreshRate,
                     selectedPath: $selectedPath,
+                    selectedShader: $selectedShader,
                     isRefreshRatePickerPresented: $isRefreshRatePickerPresented,
                     isCustomRefreshRateEditorPresented: $isCustomRefreshRateEditorPresented,
                     customMillisecondsText: $customMillisecondsText,
                     isPathPickerPresented: $isPathPickerPresented,
+                    isShaderPickerPresented: $isShaderPickerPresented,
                     safeInsets: safeInsets
                 )
                 .zIndex(10)
@@ -242,44 +261,56 @@ struct LensDemoScreen: View {
 private struct LensDemoControlsRow: View {
     let refreshRate: SnapshotRefreshRate
     let selectedPath: LensDemoPathOption
+    let selectedShader: LensDemoShaderOption
     @Binding var animatesPathChanges: Bool
     let safeInsets: EdgeInsets
     let onRefreshRateTap: () -> Void
     let onPathTap: () -> Void
+    let onShaderTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
-            Button {
-                onRefreshRateTap()
-            } label: {
-                controlLabel(refreshRate.displayTitle, width: SnapshotRefreshRateControl.buttonWidth)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                onPathTap()
-            } label: {
-                controlLabel(selectedPath.title, width: LensPathSelectorControl.buttonWidth)
-            }
-            .buttonStyle(.plain)
-
+        ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                Text("Animate")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+                Button {
+                    onRefreshRateTap()
+                } label: {
+                    controlLabel(refreshRate.displayTitle, width: SnapshotRefreshRateControl.buttonWidth)
+                }
+                .buttonStyle(.plain)
 
-                Toggle("Animate path changes", isOn: $animatesPathChanges)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
+                Button {
+                    onPathTap()
+                } label: {
+                    controlLabel(selectedPath.title, width: LensPathSelectorControl.buttonWidth)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    onShaderTap()
+                } label: {
+                    controlLabel(selectedShader.title, width: LensShaderPicker.buttonWidth)
+                }
+                .buttonStyle(.plain)
+
+                HStack(spacing: 8) {
+                    Text("Animate")
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+
+                    Toggle("Animate path changes", isOn: $animatesPathChanges)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                }
+                .frame(width: Self.animationToggleWidth)
+                .padding(.vertical, 7)
+                .background(Self.controlBackground, in: Capsule())
+                .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
             }
-            .frame(width: Self.animationToggleWidth)
-            .padding(.vertical, 7)
-            .background(Self.controlBackground, in: Capsule())
-            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+            .padding(.leading, safeInsets.leading + 12)
+            .padding(.trailing, 12)
         }
-        .padding(.leading, safeInsets.leading + 12)
         .padding(.top, safeInsets.top + 12)
     }
 
@@ -301,19 +332,22 @@ private struct LensDemoControlsRow: View {
 private struct LensDemoControlsPresentationLayer: View {
     @Binding var refreshRate: SnapshotRefreshRate
     @Binding var selectedPath: LensDemoPathOption
+    @Binding var selectedShader: LensDemoShaderOption
     @Binding var isRefreshRatePickerPresented: Bool
     @Binding var isCustomRefreshRateEditorPresented: Bool
     @Binding var customMillisecondsText: String
     @Binding var isPathPickerPresented: Bool
+    @Binding var isShaderPickerPresented: Bool
     let safeInsets: EdgeInsets
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            if isRefreshRatePickerPresented || isPathPickerPresented {
+            if isRefreshRatePickerPresented || isPathPickerPresented || isShaderPickerPresented {
                 SnapshotRefreshRatePickerShade {
                     withAnimation {
                         isRefreshRatePickerPresented = false
                         isPathPickerPresented = false
+                        isShaderPickerPresented = false
                     }
                 }
                 .transition(.opacity)
@@ -357,6 +391,21 @@ private struct LensDemoControlsPresentationLayer: View {
                 .zIndex(2)
             }
 
+            if isShaderPickerPresented {
+                LensShaderPicker(
+                    selectedShader: $selectedShader,
+                    onSelect: {
+                        withAnimation {
+                            isShaderPickerPresented = false
+                        }
+                    }
+                )
+                .padding(.leading, shaderPickerLeading)
+                .padding(.top, safeInsets.top + 54)
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
+                .zIndex(2)
+            }
+
             if isCustomRefreshRateEditorPresented {
                 SnapshotRefreshRateCustomIntervalEditor(
                     millisecondsText: $customMillisecondsText,
@@ -370,6 +419,7 @@ private struct LensDemoControlsPresentationLayer: View {
         .animation(.easeInOut(duration: 0.2), value: isRefreshRatePickerPresented)
         .animation(.easeInOut(duration: 0.2), value: isCustomRefreshRateEditorPresented)
         .animation(.easeInOut(duration: 0.2), value: isPathPickerPresented)
+        .animation(.easeInOut(duration: 0.2), value: isShaderPickerPresented)
     }
 
     private var currentCustomMillisecondsText: String {
@@ -382,6 +432,10 @@ private struct LensDemoControlsPresentationLayer: View {
 
     private var pathPickerLeading: CGFloat {
         safeInsets.leading + 12 + SnapshotRefreshRateControl.buttonWidth + 8
+    }
+
+    private var shaderPickerLeading: CGFloat {
+        pathPickerLeading + LensPathSelectorControl.buttonWidth + 8
     }
 
     private func commitCustomRefreshRate(_ milliseconds: Int) {

@@ -15,8 +15,7 @@ struct LensDemoPathOption: Identifiable, Equatable {
         title: String,
         width: CGFloat,
         height: CGFloat,
-        path: @escaping @Sendable (CGRect) -> Path,
-        shaders: [GlassLensShader] = LensDemoPathOption.defaultShaderChain
+        path: @escaping @Sendable (CGRect) -> Path
     ) {
         self.id = id
         self.title = title
@@ -24,8 +23,7 @@ struct LensDemoPathOption: Identifiable, Equatable {
             width: width,
             height: height,
             path: path,
-            animatesPathChanges: true,
-            shaders: shaders
+            animatesPathChanges: true
         )
     }
 
@@ -35,21 +33,6 @@ struct LensDemoPathOption: Identifiable, Equatable {
 }
 
 extension LensDemoPathOption {
-    static let defaultShaderChain: [GlassLensShader] = [
-        .refraction(
-            GlassLensRefractionShaderSettings(
-                refraction: 1.2,
-                edgeReflection: 0.8
-            )
-        ),
-        .refraction(
-            GlassLensRefractionShaderSettings(
-                refraction: 0.45,
-                edgeReflection: 0.35
-            )
-        )
-    ]
-
     static let circle = LensDemoPathOption(
         id: "circle",
         title: "Circle",
@@ -178,6 +161,57 @@ extension LensDemoPathOption {
     ]
 }
 
+struct LensDemoShaderOption: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let shaders: [GlassLensShader]
+
+    static func == (lhs: LensDemoShaderOption, rhs: LensDemoShaderOption) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
+extension LensDemoShaderOption {
+    static let none = LensDemoShaderOption(
+        id: "none",
+        title: "No shader",
+        shaders: []
+    )
+
+    static let refraction = LensDemoShaderOption(
+        id: "refraction",
+        title: "Refraction",
+        shaders: [
+            .refraction(GlassLensRefractionShaderSettings())
+        ]
+    )
+
+    static let chain = LensDemoShaderOption(
+        id: "chain",
+        title: "Chain",
+        shaders: [
+            .refraction(
+                GlassLensRefractionShaderSettings(
+                    refraction: 1.2,
+                    edgeReflection: 0.8
+                )
+            ),
+            .refraction(
+                GlassLensRefractionShaderSettings(
+                    refraction: 0.45,
+                    edgeReflection: 0.35
+                )
+            )
+        ]
+    )
+
+    static let all: [LensDemoShaderOption] = [
+        .none,
+        .refraction,
+        .chain
+    ]
+}
+
 struct LensPathSelectorControl: View {
     @Binding private var selectedPath: LensDemoPathOption
     @Binding private var isInteractionBlocked: Bool
@@ -303,4 +337,54 @@ struct LensPathPicker: View {
                 )
         }
     }
+}
+
+struct LensShaderPicker: View {
+    @Binding var selectedShader: LensDemoShaderOption
+    let onSelect: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(LensDemoShaderOption.all) { option in
+                Button {
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        selectedShader = option
+                        onSelect()
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        shaderPreview(option)
+                            .frame(width: 28, height: 24)
+
+                        Text(option.title)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+            }
+        }
+        .font(.system(size: 14, weight: .medium, design: .rounded))
+        .foregroundStyle(.primary)
+        .frame(width: 190)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
+    }
+
+    private func shaderPreview(_ option: LensDemoShaderOption) -> some View {
+        HStack(spacing: 3) {
+            ForEach(0..<previewDotCount(for: option), id: \.self) { index in
+                Circle()
+                    .fill(option == selectedShader ? Color.accentColor : Color.primary.opacity(0.55))
+                    .opacity(index < option.shaders.count ? 1 : 0.25)
+            }
+        }
+    }
+
+    private func previewDotCount(for option: LensDemoShaderOption) -> Int {
+        max(option.shaders.count, 1)
+    }
+
+    static let buttonWidth: CGFloat = 104
 }
