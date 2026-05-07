@@ -152,7 +152,8 @@ struct LensDemoScreen: View {
                     customMillisecondsText: $customMillisecondsText,
                     isPathPickerPresented: $isPathPickerPresented,
                     isShaderPickerPresented: $isShaderPickerPresented,
-                    safeInsets: safeInsets
+                    safeInsets: safeInsets,
+                    containerSize: size
                 )
                 .zIndex(10)
             }
@@ -339,6 +340,7 @@ private struct LensDemoControlsPresentationLayer: View {
     @Binding var isPathPickerPresented: Bool
     @Binding var isShaderPickerPresented: Bool
     let safeInsets: EdgeInsets
+    let containerSize: CGSize
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -370,7 +372,7 @@ private struct LensDemoControlsPresentationLayer: View {
                         }
                     }
                 )
-                .padding(.leading, safeInsets.leading + 12)
+                .padding(.leading, refreshRatePickerLeading)
                 .padding(.top, safeInsets.top + 54)
                 .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
                 .zIndex(2)
@@ -416,6 +418,7 @@ private struct LensDemoControlsPresentationLayer: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .ignoresSafeArea()
         .animation(.easeInOut(duration: 0.2), value: isRefreshRatePickerPresented)
         .animation(.easeInOut(duration: 0.2), value: isCustomRefreshRateEditorPresented)
         .animation(.easeInOut(duration: 0.2), value: isPathPickerPresented)
@@ -430,12 +433,25 @@ private struct LensDemoControlsPresentationLayer: View {
         }
     }
 
+    private var refreshRatePickerLeading: CGFloat {
+        let ideal = safeInsets.leading + 12
+        return adjustedLeading(ideal)
+    }
+
     private var pathPickerLeading: CGFloat {
-        safeInsets.leading + 12 + SnapshotRefreshRateControl.buttonWidth + 8
+        let ideal = safeInsets.leading + 12 + SnapshotRefreshRateControl.buttonWidth + 8
+        return adjustedLeading(ideal)
     }
 
     private var shaderPickerLeading: CGFloat {
-        pathPickerLeading + LensPathSelectorControl.buttonWidth + 8
+        let ideal = pathPickerLeading + LensPathSelectorControl.buttonWidth + 8
+        return adjustedLeading(ideal)
+    }
+
+    private func adjustedLeading(_ ideal: CGFloat) -> CGFloat {
+        let pickerWidth: CGFloat = 190
+        let horizontalMargin: CGFloat = 12
+        return min(ideal, containerSize.width - pickerWidth - horizontalMargin)
     }
 
     private func commitCustomRefreshRate(_ milliseconds: Int) {
