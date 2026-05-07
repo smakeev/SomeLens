@@ -64,7 +64,7 @@ struct LensDemoScreen: View {
     @State private var lastCommittedLensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
     @State private var snapshotRefreshRate: SnapshotRefreshRate = .automatic
     @State private var selectedPath: LensDemoPathOption = .circle
-    @State private var selectedShader: LensDemoShaderOption = .refraction
+    @State private var selectedShaders: [LensDemoShaderOption] = [.refraction]
     @State private var animatesPathChanges = true
     @State private var isRefreshRatePickerPresented = false
     @State private var isCustomRefreshRateEditorPresented = false
@@ -76,7 +76,7 @@ struct LensDemoScreen: View {
     private var lensSettings: GlassLensSettings {
         var settings = selectedPath.settings
         settings.animatesPathChanges = animatesPathChanges
-        settings.shaders = selectedShader.shaders
+        settings.shaders = selectedShaders.flatMap(\.shaders)
         return settings
     }
 
@@ -108,7 +108,7 @@ struct LensDemoScreen: View {
                         LensDemoControlsRow(
                             refreshRate: snapshotRefreshRate,
                             selectedPath: selectedPath,
-                            selectedShader: selectedShader,
+                            selectedShaders: selectedShaders,
                             animatesPathChanges: $animatesPathChanges,
                             safeInsets: safeInsets,
                             onRefreshRateTap: {
@@ -146,7 +146,7 @@ struct LensDemoScreen: View {
                 LensDemoControlsPresentationLayer(
                     refreshRate: $snapshotRefreshRate,
                     selectedPath: $selectedPath,
-                    selectedShader: $selectedShader,
+                    selectedShaders: $selectedShaders,
                     isRefreshRatePickerPresented: $isRefreshRatePickerPresented,
                     isCustomRefreshRateEditorPresented: $isCustomRefreshRateEditorPresented,
                     customMillisecondsText: $customMillisecondsText,
@@ -262,7 +262,7 @@ struct LensDemoScreen: View {
 private struct LensDemoControlsRow: View {
     let refreshRate: SnapshotRefreshRate
     let selectedPath: LensDemoPathOption
-    let selectedShader: LensDemoShaderOption
+    let selectedShaders: [LensDemoShaderOption]
     @Binding var animatesPathChanges: Bool
     let safeInsets: EdgeInsets
     let onRefreshRateTap: () -> Void
@@ -289,7 +289,7 @@ private struct LensDemoControlsRow: View {
                 Button {
                     onShaderTap()
                 } label: {
-                    controlLabel(selectedShader.title, width: LensShaderPicker.buttonWidth)
+                    controlLabel(shaderButtonTitle, width: LensShaderPicker.buttonWidth)
                 }
                 .buttonStyle(.plain)
 
@@ -326,6 +326,14 @@ private struct LensDemoControlsRow: View {
             .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
     }
 
+    private var shaderButtonTitle: String {
+        if selectedShaders.isEmpty {
+            "Shaders 0"
+        } else {
+            "Shaders \(selectedShaders.count)"
+        }
+    }
+
     private static let controlBackground = Color.white.opacity(0.36)
     private static let animationToggleWidth: CGFloat = 132
 }
@@ -333,7 +341,7 @@ private struct LensDemoControlsRow: View {
 private struct LensDemoControlsPresentationLayer: View {
     @Binding var refreshRate: SnapshotRefreshRate
     @Binding var selectedPath: LensDemoPathOption
-    @Binding var selectedShader: LensDemoShaderOption
+    @Binding var selectedShaders: [LensDemoShaderOption]
     @Binding var isRefreshRatePickerPresented: Bool
     @Binding var isCustomRefreshRateEditorPresented: Bool
     @Binding var customMillisecondsText: String
@@ -395,12 +403,7 @@ private struct LensDemoControlsPresentationLayer: View {
 
             if isShaderPickerPresented {
                 LensShaderPicker(
-                    selectedShader: $selectedShader,
-                    onSelect: {
-                        withAnimation {
-                            isShaderPickerPresented = false
-                        }
-                    }
+                    selectedShaders: $selectedShaders
                 )
                 .padding(.leading, shaderPickerLeading)
                 .padding(.top, safeInsets.top + 54)
