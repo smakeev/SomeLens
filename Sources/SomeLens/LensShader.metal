@@ -175,3 +175,218 @@ using namespace metal;
 
     return layer.sample(samplePosition);
 }
+
+[[stitchable]] half4 ripple(float2 position,
+                            SwiftUI::Layer layer,
+                            float centerX,
+                            float centerY,
+                            float radius,
+                            float amplitude,
+                            float frequency,
+                            float phase,
+                            float falloff)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+    float2 direction = (dist > 1e-5) ? (toCenter / dist) : float2(0.0, 0.0);
+
+    float clampedFalloff = max(falloff, 0.05);
+    float edgeFade = 1.0 - smoothstep(0.82, 1.0, nd);
+    float centerFade = smoothstep(0.0, 0.18, nd);
+    float strength = pow(saturate(1.0 - nd), clampedFalloff) * edgeFade * centerFade;
+    float wave = sin(nd * frequency * 6.2831853 + phase);
+    float offset = amplitude * wave * strength;
+    float2 samplePosition = position + direction * offset;
+
+    return layer.sample(samplePosition);
+}
+
+[[stitchable]] half4 twirl(float2 position,
+                           SwiftUI::Layer layer,
+                           float centerX,
+                           float centerY,
+                           float radius,
+                           float angle,
+                           float falloff,
+                           float centerRadius)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+
+    float clampedFalloff = max(falloff, 0.05);
+    float clampedCenterRadius = clamp(centerRadius, 0.0, 0.95);
+    float edgeProgress = smoothstep(clampedCenterRadius, 1.0, nd);
+    float strength = pow(1.0 - edgeProgress, clampedFalloff);
+    float localAngle = -angle * strength;
+    float s = sin(localAngle);
+    float c = cos(localAngle);
+    float2 rotated = float2(
+        toCenter.x * c - toCenter.y * s,
+        toCenter.x * s + toCenter.y * c
+    );
+
+    return layer.sample(center + rotated);
+}
+
+[[stitchable]] half4 caustics(float2 position,
+                              SwiftUI::Layer layer,
+                              float centerX,
+                              float centerY,
+                              float radius,
+                              float intensity,
+                              float scale,
+                              float falloff)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+    float2 uv = toCenter / max(radius, 1e-5);
+
+    float clampedScale = max(scale, 0.1);
+    float clampedFalloff = max(falloff, 0.05);
+    float radialFade = pow(saturate(1.0 - nd), clampedFalloff);
+    float rimFade = 1.0 - smoothstep(0.88, 1.0, nd);
+
+    float waveA = sin((uv.x * 1.7 + uv.y * 0.7) * clampedScale + nd * 5.3);
+    float waveB = sin((uv.x * -0.8 + uv.y * 1.9) * clampedScale - nd * 4.1);
+    float streaks = pow(saturate((waveA + waveB) * 0.25 + 0.5), 5.0);
+    float highlight = saturate(intensity) * streaks * radialFade * rimFade;
+
+    half4 base = layer.sample(position);
+    half3 tint = half3(1.0h, 0.94h, 0.78h);
+    base.rgb += tint * half(highlight);
+    return base;
+}
+
+[[stitchable]] half4 vignette(float2 position,
+                              SwiftUI::Layer layer,
+                              float centerX,
+                              float centerY,
+                              float radius,
+                              float intensity,
+                              float vignetteRadius,
+                              float softness)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+
+    float inner = clamp(vignetteRadius, 0.0, 0.98);
+    float outer = clamp(inner + max(softness, 0.01), inner + 0.01, 1.05);
+    float edge = smoothstep(inner, outer, nd);
+    float darken = saturate(intensity) * edge * edge;
+    float contrast = 1.0 + darken * 0.18;
+
+    half4 base = layer.sample(position);
+    half3 shadow = half3(0.22h, 0.28h, 0.36h);
+    half3 contrasted = (base.rgb - 0.5h) * half(contrast) + 0.5h;
+    base.rgb = mix(contrasted, shadow, half(darken * 0.72));
+    return base;
+}
+
+[[stitchable]] half4 rimGlow(float2 position,
+                             SwiftUI::Layer layer,
+                             float centerX,
+                             float centerY,
+                             float radius,
+                             float intensity,
+                             float width,
+                             float softness)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+
+    float clampedWidth = clamp(width, 0.01, 0.5);
+    float clampedSoftness = max(softness, 0.01);
+    float visibleEdge = 0.70710678;
+    float inner = max(visibleEdge - clampedWidth - clampedSoftness, 0.0);
+    float peak = visibleEdge - clampedWidth * 0.25;
+    float outer = visibleEdge + clampedSoftness * 0.75;
+    float glowIn = smoothstep(inner, peak, nd);
+    float glowOut = 1.0 - smoothstep(peak, outer, nd);
+    float glow = saturate(glowIn * glowOut) * saturate(intensity);
+
+    half4 base = layer.sample(position);
+    half3 warmEdge = half3(1.0h, 0.96h, 0.82h);
+    half3 coolEdge = half3(0.58h, 0.78h, 1.0h);
+    half colorShift = half(saturate((nd - 0.52) * 4.0));
+    half3 glowColor = mix(warmEdge, coolEdge, colorShift);
+    half3 lifted = mix(base.rgb, glowColor, half(glow * 0.55));
+    base.rgb = lifted + glowColor * half(glow * 0.35);
+    return base;
+}
+
+[[stitchable]] half4 sparkle(float2 position,
+                             SwiftUI::Layer layer,
+                             float centerX,
+                             float centerY,
+                             float radius,
+                             float intensity,
+                             float scale,
+                             float threshold)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+    float2 uv = toCenter / max(radius, 1e-5);
+
+    float clampedScale = max(scale, 1.0);
+    float2 cell = floor((uv + 1.0) * clampedScale);
+    float cellHash = fract(sin(dot(cell, float2(12.9898, 78.233))) * 43758.5453);
+    float2 local = ((uv + 1.0) * clampedScale) - cell - 0.5;
+    float starShape = 1.0 - smoothstep(0.0, 0.42, length(local));
+    starShape *= max(abs(local.x), abs(local.y)) < 0.36 ? 1.0 : 0.0;
+
+    float rimBias = smoothstep(0.18, 0.72, nd) * (1.0 - smoothstep(0.78, 1.0, nd));
+    float sparkleMask = smoothstep(clamp(threshold, 0.0, 0.98), 1.0, cellHash);
+    float glint = starShape * sparkleMask * rimBias * saturate(intensity);
+
+    half4 base = layer.sample(position);
+    half3 sparkleColor = half3(1.0h, 0.98h, 0.88h);
+    base.rgb = mix(base.rgb, sparkleColor, half(glint * 0.65)) + sparkleColor * half(glint * 0.45);
+    return base;
+}
+
+[[stitchable]] half4 prism(float2 position,
+                           SwiftUI::Layer layer,
+                           float centerX,
+                           float centerY,
+                           float radius,
+                           float amount,
+                           float facets,
+                           float falloff)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+    float angle = atan2(toCenter.y, toCenter.x);
+
+    float facetCount = max(facets, 3.0);
+    float facetAngle = floor((angle + 3.14159265) / (6.2831853 / facetCount)) * (6.2831853 / facetCount);
+    float2 facetDirection = float2(cos(facetAngle), sin(facetAngle));
+    float edgeFade = smoothstep(0.18, 0.72, nd) * (1.0 - smoothstep(0.82, 1.0, nd));
+    float strength = amount * pow(saturate(nd), max(falloff, 0.05)) * edgeFade;
+    float2 offset = facetDirection * strength;
+
+    half4 base = layer.sample(position);
+    half4 redSample = layer.sample(position + offset);
+    half4 greenSample = layer.sample(position - offset * 0.35);
+    half4 blueSample = layer.sample(position - offset);
+
+    half4 color = base;
+    color.r = redSample.r;
+    color.g = greenSample.g;
+    color.b = blueSample.b;
+    color.a = base.a;
+    return color;
+}

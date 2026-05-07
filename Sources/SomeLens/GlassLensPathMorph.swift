@@ -15,6 +15,13 @@ extension GlassLensSettings {
         case chromaticAberration(amount: Int, falloff: Int, edgeOnly: Bool)
         case frostedBlur(radius: Int, intensity: Int, edgeBias: Int)
         case magnification(scale: Int, falloff: Int, centerRadius: Int)
+        case ripple(amplitude: Int, frequency: Int, phase: Int, falloff: Int)
+        case twirl(angle: Int, falloff: Int, centerRadius: Int)
+        case caustics(intensity: Int, scale: Int, falloff: Int)
+        case vignette(intensity: Int, radius: Int, softness: Int)
+        case rimGlow(intensity: Int, width: Int, softness: Int)
+        case sparkle(intensity: Int, scale: Int, threshold: Int)
+        case prism(amount: Int, facets: Int, falloff: Int)
     }
 
     struct QuantizedPoint: Hashable {
@@ -168,6 +175,179 @@ extension GlassLensSettings {
                         centerRadius: interpolate(
                             startSettings.centerRadius,
                             endSettings.centerRadius,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .ripple(startSettings),
+                .ripple(endSettings)
+            ):
+                return .ripple(
+                    GlassLensRippleShaderSettings(
+                        amplitude: interpolate(
+                            startSettings.amplitude,
+                            endSettings.amplitude,
+                            progress: progress
+                        ),
+                        frequency: interpolate(
+                            startSettings.frequency,
+                            endSettings.frequency,
+                            progress: progress
+                        ),
+                        phase: interpolate(
+                            startSettings.phase,
+                            endSettings.phase,
+                            progress: progress
+                        ),
+                        falloff: interpolate(
+                            startSettings.falloff,
+                            endSettings.falloff,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .twirl(startSettings),
+                .twirl(endSettings)
+            ):
+                return .twirl(
+                    GlassLensTwirlShaderSettings(
+                        angle: interpolate(
+                            startSettings.angle,
+                            endSettings.angle,
+                            progress: progress
+                        ),
+                        falloff: interpolate(
+                            startSettings.falloff,
+                            endSettings.falloff,
+                            progress: progress
+                        ),
+                        centerRadius: interpolate(
+                            startSettings.centerRadius,
+                            endSettings.centerRadius,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .caustics(startSettings),
+                .caustics(endSettings)
+            ):
+                return .caustics(
+                    GlassLensCausticsShaderSettings(
+                        intensity: interpolate(
+                            startSettings.intensity,
+                            endSettings.intensity,
+                            progress: progress
+                        ),
+                        scale: interpolate(
+                            startSettings.scale,
+                            endSettings.scale,
+                            progress: progress
+                        ),
+                        falloff: interpolate(
+                            startSettings.falloff,
+                            endSettings.falloff,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .vignette(startSettings),
+                .vignette(endSettings)
+            ):
+                return .vignette(
+                    GlassLensVignetteShaderSettings(
+                        intensity: interpolate(
+                            startSettings.intensity,
+                            endSettings.intensity,
+                            progress: progress
+                        ),
+                        radius: interpolate(
+                            startSettings.radius,
+                            endSettings.radius,
+                            progress: progress
+                        ),
+                        softness: interpolate(
+                            startSettings.softness,
+                            endSettings.softness,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .rimGlow(startSettings),
+                .rimGlow(endSettings)
+            ):
+                return .rimGlow(
+                    GlassLensRimGlowShaderSettings(
+                        intensity: interpolate(
+                            startSettings.intensity,
+                            endSettings.intensity,
+                            progress: progress
+                        ),
+                        width: interpolate(
+                            startSettings.width,
+                            endSettings.width,
+                            progress: progress
+                        ),
+                        softness: interpolate(
+                            startSettings.softness,
+                            endSettings.softness,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .sparkle(startSettings),
+                .sparkle(endSettings)
+            ):
+                return .sparkle(
+                    GlassLensSparkleShaderSettings(
+                        intensity: interpolate(
+                            startSettings.intensity,
+                            endSettings.intensity,
+                            progress: progress
+                        ),
+                        scale: interpolate(
+                            startSettings.scale,
+                            endSettings.scale,
+                            progress: progress
+                        ),
+                        threshold: interpolate(
+                            startSettings.threshold,
+                            endSettings.threshold,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .prism(startSettings),
+                .prism(endSettings)
+            ):
+                return .prism(
+                    GlassLensPrismShaderSettings(
+                        amount: interpolate(
+                            startSettings.amount,
+                            endSettings.amount,
+                            progress: progress
+                        ),
+                        facets: interpolate(
+                            startSettings.facets,
+                            endSettings.facets,
+                            progress: progress
+                        ),
+                        falloff: interpolate(
+                            startSettings.falloff,
+                            endSettings.falloff,
                             progress: progress
                         )
                     )
@@ -386,6 +566,56 @@ private extension GlassLensShader {
                 scale: GlassLensSettings.quantized(settings.scale),
                 falloff: GlassLensSettings.quantized(settings.falloff),
                 centerRadius: GlassLensSettings.quantized(settings.centerRadius)
+            )
+
+        case .ripple(let settings):
+            .ripple(
+                amplitude: GlassLensSettings.quantized(settings.amplitude),
+                frequency: GlassLensSettings.quantized(settings.frequency),
+                phase: GlassLensSettings.quantized(settings.phase),
+                falloff: GlassLensSettings.quantized(settings.falloff)
+            )
+
+        case .twirl(let settings):
+            .twirl(
+                angle: GlassLensSettings.quantized(settings.angle),
+                falloff: GlassLensSettings.quantized(settings.falloff),
+                centerRadius: GlassLensSettings.quantized(settings.centerRadius)
+            )
+
+        case .caustics(let settings):
+            .caustics(
+                intensity: GlassLensSettings.quantized(settings.intensity),
+                scale: GlassLensSettings.quantized(settings.scale),
+                falloff: GlassLensSettings.quantized(settings.falloff)
+            )
+
+        case .vignette(let settings):
+            .vignette(
+                intensity: GlassLensSettings.quantized(settings.intensity),
+                radius: GlassLensSettings.quantized(settings.radius),
+                softness: GlassLensSettings.quantized(settings.softness)
+            )
+
+        case .rimGlow(let settings):
+            .rimGlow(
+                intensity: GlassLensSettings.quantized(settings.intensity),
+                width: GlassLensSettings.quantized(settings.width),
+                softness: GlassLensSettings.quantized(settings.softness)
+            )
+
+        case .sparkle(let settings):
+            .sparkle(
+                intensity: GlassLensSettings.quantized(settings.intensity),
+                scale: GlassLensSettings.quantized(settings.scale),
+                threshold: GlassLensSettings.quantized(settings.threshold)
+            )
+
+        case .prism(let settings):
+            .prism(
+                amount: GlassLensSettings.quantized(settings.amount),
+                facets: GlassLensSettings.quantized(settings.facets),
+                falloff: GlassLensSettings.quantized(settings.falloff)
             )
         }
     }

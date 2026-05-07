@@ -281,6 +281,55 @@ private extension GlassLensShader {
                 lensSize: lensSize,
                 shaderRadius: shaderRadius
             )
+
+        case .ripple(let settings):
+            rippleShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .twirl(let settings):
+            twirlShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .caustics(let settings):
+            causticsShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .vignette(let settings):
+            vignetteShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .rimGlow(let settings):
+            rimGlowShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .sparkle(let settings):
+            sparkleShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .prism(let settings):
+            prismShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
         }
     }
 
@@ -303,6 +352,31 @@ private extension GlassLensShader {
 
         case .magnification:
             return CGSize(width: 2, height: 2)
+
+        case .ripple(let settings):
+            let offset = max(abs(settings.amplitude), 0) + 2
+            return CGSize(width: offset, height: offset)
+
+        case .twirl(let settings):
+            let angle = min(max(abs(settings.angle), 0), .pi)
+            let offset = shaderRadius * angle * 0.35 + 2
+            return CGSize(width: offset, height: offset)
+
+        case .caustics:
+            return CGSize(width: 2, height: 2)
+
+        case .vignette:
+            return CGSize(width: 2, height: 2)
+
+        case .rimGlow:
+            return CGSize(width: 2, height: 2)
+
+        case .sparkle:
+            return CGSize(width: 2, height: 2)
+
+        case .prism(let settings):
+            let offset = max(settings.amount, 0) + 2
+            return CGSize(width: offset, height: offset)
         }
     }
 
@@ -382,6 +456,147 @@ private extension GlassLensShader {
 
         let library = ShaderLibrary.bundle(.module)
         let function = library[dynamicMember: "magnification"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func rippleShader(
+        settings: GlassLensRippleShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.amplitude)),
+            .float(Float(settings.frequency)),
+            .float(Float(settings.phase)),
+            .float(Float(settings.falloff))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "ripple"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func twirlShader(
+        settings: GlassLensTwirlShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.angle)),
+            .float(Float(settings.falloff)),
+            .float(Float(settings.centerRadius))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "twirl"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func causticsShader(
+        settings: GlassLensCausticsShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.intensity)),
+            .float(Float(settings.scale)),
+            .float(Float(settings.falloff))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "caustics"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func vignetteShader(
+        settings: GlassLensVignetteShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.intensity)),
+            .float(Float(settings.radius)),
+            .float(Float(settings.softness))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "vignette"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func rimGlowShader(
+        settings: GlassLensRimGlowShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.intensity)),
+            .float(Float(settings.width)),
+            .float(Float(settings.softness))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "rimGlow"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func sparkleShader(
+        settings: GlassLensSparkleShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.intensity)),
+            .float(Float(settings.scale)),
+            .float(Float(settings.threshold))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "sparkle"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func prismShader(
+        settings: GlassLensPrismShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.amount)),
+            .float(Float(settings.facets)),
+            .float(Float(settings.falloff))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "prism"]
         return Shader(function: function, arguments: arguments)
     }
 }

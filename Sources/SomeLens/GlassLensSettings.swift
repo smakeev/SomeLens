@@ -52,6 +52,13 @@ public enum GlassLensShader: Equatable, Sendable {
     case chromaticAberration(GlassLensChromaticAberrationShaderSettings)
     case frostedBlur(GlassLensFrostedBlurShaderSettings)
     case magnification(GlassLensMagnificationShaderSettings)
+    case ripple(GlassLensRippleShaderSettings)
+    case twirl(GlassLensTwirlShaderSettings)
+    case caustics(GlassLensCausticsShaderSettings)
+    case vignette(GlassLensVignetteShaderSettings)
+    case rimGlow(GlassLensRimGlowShaderSettings)
+    case sparkle(GlassLensSparkleShaderSettings)
+    case prism(GlassLensPrismShaderSettings)
 }
 
 public struct GlassLensRefractionShaderSettings: Equatable, Sendable {
@@ -112,5 +119,120 @@ public struct GlassLensMagnificationShaderSettings: Equatable, Sendable {
         self.scale = scale
         self.falloff = falloff
         self.centerRadius = centerRadius
+    }
+}
+
+public struct GlassLensRippleShaderSettings: Equatable, Sendable {
+    public var amplitude: CGFloat
+    public var frequency: CGFloat
+    public var phase: CGFloat
+    public var falloff: CGFloat
+
+    public init(
+        amplitude: CGFloat = 9.0,
+        frequency: CGFloat = 9.0,
+        phase: CGFloat = 0.0,
+        falloff: CGFloat = 1.1
+    ) {
+        self.amplitude = amplitude
+        self.frequency = frequency
+        self.phase = phase
+        self.falloff = falloff
+    }
+}
+
+public struct GlassLensTwirlShaderSettings: Equatable, Sendable {
+    public var angle: CGFloat
+    public var falloff: CGFloat
+    public var centerRadius: CGFloat
+
+    public init(
+        angle: CGFloat = 2.2,
+        falloff: CGFloat = 1.15,
+        centerRadius: CGFloat = 0.18
+    ) {
+        self.angle = angle
+        self.falloff = falloff
+        self.centerRadius = centerRadius
+    }
+}
+
+public struct GlassLensCausticsShaderSettings: Equatable, Sendable {
+    public var intensity: CGFloat
+    public var scale: CGFloat
+    public var falloff: CGFloat
+
+    public init(
+        intensity: CGFloat = 0.32,
+        scale: CGFloat = 8.0,
+        falloff: CGFloat = 1.25
+    ) {
+        self.intensity = intensity
+        self.scale = scale
+        self.falloff = falloff
+    }
+}
+
+public struct GlassLensVignetteShaderSettings: Equatable, Sendable {
+    public var intensity: CGFloat
+    public var radius: CGFloat
+    public var softness: CGFloat
+
+    public init(
+        intensity: CGFloat = 0.55,
+        radius: CGFloat = 0.38,
+        softness: CGFloat = 0.42
+    ) {
+        self.intensity = intensity
+        self.radius = radius
+        self.softness = softness
+    }
+}
+
+public struct GlassLensRimGlowShaderSettings: Equatable, Sendable {
+    public var intensity: CGFloat
+    public var width: CGFloat
+    public var softness: CGFloat
+
+    public init(
+        intensity: CGFloat = 0.72,
+        width: CGFloat = 0.16,
+        softness: CGFloat = 0.2
+    ) {
+        self.intensity = intensity
+        self.width = width
+        self.softness = softness
+    }
+}
+
+public struct GlassLensSparkleShaderSettings: Equatable, Sendable {
+    public var intensity: CGFloat
+    public var scale: CGFloat
+    public var threshold: CGFloat
+
+    public init(
+        intensity: CGFloat = 0.42,
+        scale: CGFloat = 34.0,
+        threshold: CGFloat = 0.78
+    ) {
+        self.intensity = intensity
+        self.scale = scale
+        self.threshold = threshold
+    }
+}
+
+public struct GlassLensPrismShaderSettings: Equatable, Sendable {
+    public var amount: CGFloat
+    public var facets: CGFloat
+    public var falloff: CGFloat
+
+    public init(
+        amount: CGFloat = 10.0,
+        facets: CGFloat = 8.0,
+        falloff: CGFloat = 1.1
+    ) {
+        self.amount = amount
+        self.facets = facets
+        self.falloff = falloff
     }
 }

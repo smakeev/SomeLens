@@ -228,6 +228,105 @@ extension LensDemoShaderOption {
         ]
     )
 
+    static let ripple = LensDemoShaderOption(
+        id: "ripple",
+        title: "Ripple",
+        shaders: [
+            .ripple(
+                GlassLensRippleShaderSettings(
+                    amplitude: 12.0,
+                    frequency: 11.0,
+                    phase: 0.6,
+                    falloff: 0.85
+                )
+            )
+        ]
+    )
+
+    static let twirl = LensDemoShaderOption(
+        id: "twirl",
+        title: "Twirl",
+        shaders: [
+            .twirl(
+                GlassLensTwirlShaderSettings(
+                    angle: 2.8,
+                    falloff: 1.0,
+                    centerRadius: 0.16
+                )
+            )
+        ]
+    )
+
+    static let caustics = LensDemoShaderOption(
+        id: "caustics",
+        title: "Caustics",
+        shaders: [
+            .caustics(
+                GlassLensCausticsShaderSettings(
+                    intensity: 0.48,
+                    scale: 10.0,
+                    falloff: 0.9
+                )
+            )
+        ]
+    )
+
+    static let vignette = LensDemoShaderOption(
+        id: "vignette",
+        title: "Vignette",
+        shaders: [
+            .vignette(
+                GlassLensVignetteShaderSettings(
+                    intensity: 0.78,
+                    radius: 0.32,
+                    softness: 0.42
+                )
+            )
+        ]
+    )
+
+    static let rimGlow = LensDemoShaderOption(
+        id: "rim-glow",
+        title: "Rim Glow",
+        shaders: [
+            .rimGlow(
+                GlassLensRimGlowShaderSettings(
+                    intensity: 0.95,
+                    width: 0.22,
+                    softness: 0.18
+                )
+            )
+        ]
+    )
+
+    static let sparkle = LensDemoShaderOption(
+        id: "sparkle",
+        title: "Sparkle",
+        shaders: [
+            .sparkle(
+                GlassLensSparkleShaderSettings(
+                    intensity: 0.72,
+                    scale: 28.0,
+                    threshold: 0.68
+                )
+            )
+        ]
+    )
+
+    static let prism = LensDemoShaderOption(
+        id: "prism",
+        title: "Prism",
+        shaders: [
+            .prism(
+                GlassLensPrismShaderSettings(
+                    amount: 14.0,
+                    facets: 7.0,
+                    falloff: 0.9
+                )
+            )
+        ]
+    )
+
     static let chain = LensDemoShaderOption(
         id: "chain",
         title: "Chain",
@@ -253,6 +352,13 @@ extension LensDemoShaderOption {
         .chromatic,
         .frosted,
         .magnify,
+        .ripple,
+        .twirl,
+        .caustics,
+        .vignette,
+        .rimGlow,
+        .sparkle,
+        .prism,
         .chain
     ]
 }
