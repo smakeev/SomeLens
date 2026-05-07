@@ -13,6 +13,7 @@ public struct GlassLensSettings {
     public var refraction: CGFloat
     public var edgeReflection: CGFloat
     public var ringWidth: CGFloat
+    public var animatesPathChanges: Bool
 
     public init(
         width: CGFloat = 160,
@@ -20,7 +21,8 @@ public struct GlassLensSettings {
         path: @escaping @Sendable (CGRect) -> Path = GlassLensSettings.circlePath,
         refraction: CGFloat = 1.2,
         edgeReflection: CGFloat = 0.8,
-        ringWidth: CGFloat = 1.0
+        ringWidth: CGFloat = 1.0,
+        animatesPathChanges: Bool = false
     ) {
         self.width = width
         self.height = height
@@ -28,13 +30,15 @@ public struct GlassLensSettings {
         self.refraction = refraction
         self.edgeReflection = edgeReflection
         self.ringWidth = ringWidth
+        self.animatesPathChanges = animatesPathChanges
     }
 
     public static func circle(
         diameter: CGFloat = 160,
         refraction: CGFloat = 1.2,
         edgeReflection: CGFloat = 0.8,
-        ringWidth: CGFloat = 1.0
+        ringWidth: CGFloat = 1.0,
+        animatesPathChanges: Bool = false
     ) -> GlassLensSettings {
         GlassLensSettings(
             width: diameter,
@@ -42,7 +46,8 @@ public struct GlassLensSettings {
             path: circlePath,
             refraction: refraction,
             edgeReflection: edgeReflection,
-            ringWidth: ringWidth
+            ringWidth: ringWidth,
+            animatesPathChanges: animatesPathChanges
         )
     }
 }

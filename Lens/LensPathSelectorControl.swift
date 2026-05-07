@@ -19,7 +19,12 @@ struct LensDemoPathOption: Identifiable, Equatable {
     ) {
         self.id = id
         self.title = title
-        self.settings = GlassLensSettings(width: width, height: height, path: path)
+        self.settings = GlassLensSettings(
+            width: width,
+            height: height,
+            path: path,
+            animatesPathChanges: true
+        )
     }
 
     static func == (lhs: LensDemoPathOption, rhs: LensDemoPathOption) -> Bool {
@@ -247,8 +252,10 @@ private struct LensPathPicker: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(LensDemoPathOption.all) { option in
                 Button {
-                    selectedPath = option
-                    onSelect()
+                    withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        selectedPath = option
+                        onSelect()
+                    }
                 } label: {
                     HStack(spacing: 10) {
                         optionPreview(option)

@@ -9,8 +9,11 @@ public struct GlassLens: View, Loggable {
     public let center: CGPoint
     public let settings: GlassLensSettings
 
-    @EnvironmentObject private var snapshotProvider: LensSnapshotProvider
-    @Environment(\.lensContainerSafeAreaInsets) private var safeInsets
+    @State private var displayedSettings: GlassLensSettings?
+    @State private var morphStartSettings: GlassLensSettings?
+    @State private var morphEndSettings: GlassLensSettings?
+    @State private var morphProgress: CGFloat = 1
+    @State private var displayedSignature: GlassLensSettings.PathAnimationSignature?
 
     var log: SomeLensLog.Scope {
         SomeLensLog.lens
@@ -19,6 +22,87 @@ public struct GlassLens: View, Loggable {
     public init(center: CGPoint, settings: GlassLensSettings = GlassLensSettings()) {
         self.center = center
         self.settings = settings
+    }
+
+    public var body: some View {
+        GlassLensRenderer(
+            center: center,
+            startSettings: morphStartSettings ?? displayedSettings ?? settings,
+            endSettings: morphEndSettings ?? displayedSettings ?? settings,
+            progress: morphEndSettings == nil ? 1 : morphProgress
+        )
+        .task(id: settings.pathAnimationSignature) {
+            updateDisplayedSettings()
+        }
+    }
+
+    private func updateDisplayedSettings() {
+        let nextSignature = settings.pathAnimationSignature
+
+        guard displayedSignature != nil else {
+            displayedSettings = settings
+            morphStartSettings = nil
+            morphEndSettings = nil
+            morphProgress = 1
+            displayedSignature = nextSignature
+            return
+        }
+
+        guard nextSignature != displayedSignature else {
+            displayedSettings = settings
+            return
+        }
+
+        guard settings.animatesPathChanges else {
+            displayedSettings = settings
+            displayedSignature = nextSignature
+            morphStartSettings = nil
+            morphEndSettings = nil
+            morphProgress = 1
+            return
+        }
+
+        let startSettings = displayedSettings ?? settings
+        displayedSettings = settings
+        displayedSignature = nextSignature
+        morphStartSettings = startSettings
+        morphEndSettings = settings
+        morphProgress = 0
+
+        Task {
+            await MainActor.run {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                    morphProgress = 1
+                }
+            }
+        }
+    }
+}
+
+private struct GlassLensRenderer: View, Animatable, Loggable {
+    let center: CGPoint
+    let startSettings: GlassLensSettings
+    let endSettings: GlassLensSettings
+    var progress: CGFloat
+
+    @EnvironmentObject private var snapshotProvider: LensSnapshotProvider
+    @Environment(\.lensContainerSafeAreaInsets) private var safeInsets
+
+    var animatableData: CGFloat {
+        get {
+            progress
+        }
+        set {
+            progress = newValue
+        }
+    }
+
+    var log: SomeLensLog.Scope {
+        SomeLensLog.lens
+    }
+
+    private var settings: GlassLensSettings {
+        GlassLensSettings.interpolated(from: startSettings, to: endSettings, progress: progress)
     }
 
     private var lensSize: CGSize {
@@ -33,7 +117,7 @@ public struct GlassLens: View, Loggable {
         LensPathShape(path: settings.path)
     }
 
-    public var body: some View {
+    var body: some View {
         let snapshot = snapshotProvider.snapshot
         let snapshotVersion = snapshotProvider.snapshotVersion
         let hasSnapshot = snapshot != nil

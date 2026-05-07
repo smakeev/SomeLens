@@ -25,22 +25,23 @@ final class LensSnapshotProvider: ObservableObject, Loggable {
 
     func startTimer(refreshRate: SnapshotRefreshRate) {
         guard activeRefreshRate != refreshRate else { return }
+        let interval = refreshRate.interval
+
         stopTimer()
         activeRefreshRate = refreshRate
 
-        guard let interval = refreshRate.interval else {
+        if let interval {
+            i("timer start interval=\(String(format: "%.3f", interval))")
+            timerCancellable = Timer.publish(every: interval, on: .main, in: .common)
+                .autoconnect()
+                .sink { [weak self] date in
+                    guard let self else { return }
+                    self.d("timer tick")
+                    self.snapshotRequests.send(date)
+                }
+        } else {
             i("timer disabled rate=never")
-            return
         }
-
-        i("timer start interval=\(String(format: "%.3f", interval))")
-        timerCancellable = Timer.publish(every: interval, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] date in
-                guard let self else { return }
-                self.d("timer tick")
-                self.snapshotRequests.send(date)
-            }
     }
 
     func stopTimer() {
