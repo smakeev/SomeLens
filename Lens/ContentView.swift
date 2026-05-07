@@ -64,12 +64,21 @@ struct LensDemoScreen: View {
     @State private var lastCommittedLensCenterRatio: CGPoint = CGPoint(x: 0.5, y: 0.5)
     @State private var snapshotRefreshRate: SnapshotRefreshRate = .automatic
     @State private var selectedPath: LensDemoPathOption = .circle
-    @State private var isRefreshRateControlActive = false
-    @State private var isPathControlActive = false
+    @State private var animatesPathChanges = true
+    @State private var isRefreshRatePickerPresented = false
+    @State private var isCustomRefreshRateEditorPresented = false
+    @State private var customMillisecondsText = "200"
+    @State private var isPathPickerPresented = false
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     private var lensSettings: GlassLensSettings {
-        selectedPath.settings
+        var settings = selectedPath.settings
+        settings.animatesPathChanges = animatesPathChanges
+        return settings
+    }
+
+    private var isControlMenuActive: Bool {
+        isRefreshRatePickerPresented || isCustomRefreshRateEditorPresented || isPathPickerPresented
     }
 
     var body: some View {
@@ -85,27 +94,48 @@ struct LensDemoScreen: View {
 
             ZStack(alignment: .topLeading) {
                 LensContainer(snapshotRefreshRate: snapshotRefreshRate) {
-                    DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .ignoresSafeArea()
+                    ZStack(alignment: .topLeading) {
+                        DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .ignoresSafeArea()
+
+                        LensDemoControlsRow(
+                            refreshRate: snapshotRefreshRate,
+                            selectedPath: selectedPath,
+                            animatesPathChanges: $animatesPathChanges,
+                            safeInsets: safeInsets,
+                            onRefreshRateTap: {
+                                withAnimation {
+                                    isPathPickerPresented = false
+                                    isRefreshRatePickerPresented.toggle()
+                                }
+                            },
+                            onPathTap: {
+                                withAnimation {
+                                    isRefreshRatePickerPresented = false
+                                    isCustomRefreshRateEditorPresented = false
+                                    isPathPickerPresented.toggle()
+                                }
+                            }
+                        )
+                    }
                 } lenses: {
                     GlassLens(center: lensCenter, settings: lensSettings)
                         .gesture(lensDragGesture(containerSize: size, safeInsets: safeInsets))
                 }
                 .ignoresSafeArea()
-                .disabled(isRefreshRateControlActive || isPathControlActive)
+                .disabled(isControlMenuActive)
 
-                SnapshotRefreshRateControl(
+                LensDemoControlsPresentationLayer(
                     refreshRate: $snapshotRefreshRate,
-                    isInteractionBlocked: $isRefreshRateControlActive,
-                    safeInsets: safeInsets
-                )
-
-                LensPathSelectorControl(
                     selectedPath: $selectedPath,
-                    isInteractionBlocked: $isPathControlActive,
+                    isRefreshRatePickerPresented: $isRefreshRatePickerPresented,
+                    isCustomRefreshRateEditorPresented: $isCustomRefreshRateEditorPresented,
+                    customMillisecondsText: $customMillisecondsText,
+                    isPathPickerPresented: $isPathPickerPresented,
                     safeInsets: safeInsets
                 )
+                .zIndex(10)
             }
             .onReceive(counterTimer) { _ in
                 var next = counterValue + counterDirection * 1
@@ -206,6 +236,159 @@ struct LensDemoScreen: View {
             width: max(maxX - minX, 1),
             height: max(maxY - minY, 1)
         )
+    }
+}
+
+private struct LensDemoControlsRow: View {
+    let refreshRate: SnapshotRefreshRate
+    let selectedPath: LensDemoPathOption
+    @Binding var animatesPathChanges: Bool
+    let safeInsets: EdgeInsets
+    let onRefreshRateTap: () -> Void
+    let onPathTap: () -> Void
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                onRefreshRateTap()
+            } label: {
+                controlLabel(refreshRate.displayTitle, width: SnapshotRefreshRateControl.buttonWidth)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                onPathTap()
+            } label: {
+                controlLabel(selectedPath.title, width: LensPathSelectorControl.buttonWidth)
+            }
+            .buttonStyle(.plain)
+
+            HStack(spacing: 8) {
+                Text("Animate")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+
+                Toggle("Animate path changes", isOn: $animatesPathChanges)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+            }
+            .frame(width: Self.animationToggleWidth)
+            .padding(.vertical, 7)
+            .background(Self.controlBackground, in: Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+        }
+        .padding(.leading, safeInsets.leading + 12)
+        .padding(.top, safeInsets.top + 12)
+    }
+
+    private func controlLabel(_ title: String, width: CGFloat) -> some View {
+        Text(title)
+            .font(.system(size: 14, weight: .semibold, design: .rounded))
+            .foregroundStyle(.primary)
+            .lineLimit(1)
+            .frame(width: width)
+            .padding(.vertical, 8)
+            .background(Self.controlBackground, in: Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+    }
+
+    private static let controlBackground = Color.white.opacity(0.36)
+    private static let animationToggleWidth: CGFloat = 132
+}
+
+private struct LensDemoControlsPresentationLayer: View {
+    @Binding var refreshRate: SnapshotRefreshRate
+    @Binding var selectedPath: LensDemoPathOption
+    @Binding var isRefreshRatePickerPresented: Bool
+    @Binding var isCustomRefreshRateEditorPresented: Bool
+    @Binding var customMillisecondsText: String
+    @Binding var isPathPickerPresented: Bool
+    let safeInsets: EdgeInsets
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if isRefreshRatePickerPresented || isPathPickerPresented {
+                SnapshotRefreshRatePickerShade {
+                    withAnimation {
+                        isRefreshRatePickerPresented = false
+                        isPathPickerPresented = false
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
+
+            if isRefreshRatePickerPresented {
+                SnapshotRefreshRatePicker(
+                    selectedRate: $refreshRate,
+                    onSelect: {
+                        withAnimation {
+                            isRefreshRatePickerPresented = false
+                        }
+                    },
+                    onSelectCustom: {
+                        customMillisecondsText = currentCustomMillisecondsText
+                        withAnimation {
+                            isRefreshRatePickerPresented = false
+                            isCustomRefreshRateEditorPresented = true
+                        }
+                    }
+                )
+                .padding(.leading, safeInsets.leading + 12)
+                .padding(.top, safeInsets.top + 54)
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
+                .zIndex(2)
+            }
+
+            if isPathPickerPresented {
+                LensPathPicker(
+                    selectedPath: $selectedPath,
+                    onSelect: {
+                        withAnimation {
+                            isPathPickerPresented = false
+                        }
+                    }
+                )
+                .padding(.leading, pathPickerLeading)
+                .padding(.top, safeInsets.top + 54)
+                .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
+                .zIndex(2)
+            }
+
+            if isCustomRefreshRateEditorPresented {
+                SnapshotRefreshRateCustomIntervalEditor(
+                    millisecondsText: $customMillisecondsText,
+                    onCommit: commitCustomRefreshRate
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(3)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .animation(.easeInOut(duration: 0.2), value: isRefreshRatePickerPresented)
+        .animation(.easeInOut(duration: 0.2), value: isCustomRefreshRateEditorPresented)
+        .animation(.easeInOut(duration: 0.2), value: isPathPickerPresented)
+    }
+
+    private var currentCustomMillisecondsText: String {
+        if case .custom(let milliseconds) = refreshRate {
+            "\(milliseconds)"
+        } else {
+            customMillisecondsText
+        }
+    }
+
+    private var pathPickerLeading: CGFloat {
+        safeInsets.leading + 12 + SnapshotRefreshRateControl.buttonWidth + 8
+    }
+
+    private func commitCustomRefreshRate(_ milliseconds: Int) {
+        refreshRate = .custom(milliseconds: milliseconds)
+        withAnimation {
+            isCustomRefreshRateEditorPresented = false
+        }
     }
 }
 

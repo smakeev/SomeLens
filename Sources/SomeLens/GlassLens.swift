@@ -201,10 +201,10 @@ private struct GlassLensRenderer: View, Animatable, Loggable {
         #elseif os(iOS)
         d("crop snapshotSize=\(format(snapshot.size)) version=\(snapshotProvider.snapshotVersion) origin=\(format(CGPoint(x: originX, y: originY))) size=\(format(cropSize))")
 
-        let format = UIGraphicsImageRendererFormat.default()
-        format.scale = snapshot.scale
-        format.opaque = false
-        let renderer = UIGraphicsImageRenderer(size: cropSize, format: format)
+        let rendererFormat = UIGraphicsImageRendererFormat.default()
+        rendererFormat.scale = snapshot.scale
+        rendererFormat.opaque = false
+        let renderer = UIGraphicsImageRenderer(size: cropSize, format: rendererFormat)
         let cropped = renderer.image { context in
             context.cgContext.setFillColor(UIColor.systemOrange.withAlphaComponent(0.3).cgColor)
             context.cgContext.fill(cropRect)

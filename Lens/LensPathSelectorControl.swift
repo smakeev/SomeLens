@@ -241,10 +241,10 @@ struct LensPathSelectorControl: View {
         isInteractionBlocked = isPickerPresented
     }
 
-    private static let buttonWidth: CGFloat = 128
+    static let buttonWidth: CGFloat = 128
 }
 
-private struct LensPathPicker: View {
+struct LensPathPicker: View {
     @Binding var selectedPath: LensDemoPathOption
     let onSelect: () -> Void
 

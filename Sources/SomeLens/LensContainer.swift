@@ -9,6 +9,8 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
     private let lenses: () -> Lenses
     private let snapshotRefreshRate: SnapshotRefreshRate
     @State private var latestSnapshotRequest: Date?
+    @State private var snapshotRequestID: Int = 0
+    @State private var snapshotReason: String = "initial"
     @StateObject private var snapshotProvider = LensSnapshotProvider()
 
     var log: SomeLensLog.Scope {
@@ -31,8 +33,15 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
             let safeInsets = geometry.safeAreaInsets
             let scale = displayScale
             ZStack {
-                content()
-                    .frame(width: size.width, height: size.height)
+                LensContentSnapshotHost(
+                    content: content().frame(width: size.width, height: size.height),
+                    size: size,
+                    scale: scale,
+                    snapshotRequestID: snapshotRequestID,
+                    snapshotReason: snapshotReason,
+                    snapshotProvider: snapshotProvider
+                )
+                .frame(width: size.width, height: size.height)
 
                 lenses()
                     .environmentObject(snapshotProvider)
@@ -41,12 +50,12 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
             }
             .onAppear {
                 i("appear size=\(format(size)) scale=\(scale) rate=\(snapshotRefreshRate.debugDescription)")
-                captureSnapshot(reason: "appear", size: size, scale: scale)
+                requestSnapshot(reason: "appear", size: size)
                 snapshotProvider.startTimer(refreshRate: snapshotRefreshRate)
             }
-            .onChange(of: snapshotRefreshRate) { newRefreshRate in
+            .onChange(of: snapshotRefreshRate) { _, newRefreshRate in
                 i("rate changed rate=\(newRefreshRate.debugDescription)")
-                captureSnapshot(reason: "rateChanged", size: size, scale: scale)
+                requestSnapshot(reason: "rateChanged", size: size)
                 snapshotProvider.startTimer(refreshRate: newRefreshRate)
             }
             .onDisappear {
@@ -55,19 +64,15 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
             .onReceive(snapshotProvider.snapshotRequests) { date in
                 latestSnapshotRequest = date
                 d("timer tick")
-                captureSnapshot(reason: "timer", size: size, scale: scale)
+                requestSnapshot(reason: "timer", size: size)
             }
         }
     }
 
-    private func captureSnapshot(reason: String, size: CGSize, scale: CGFloat) {
+    private func requestSnapshot(reason: String, size: CGSize) {
         d("capture requested reason=\(reason) size=\(format(size))")
-        snapshotProvider.capture(
-            content: content().frame(width: size.width, height: size.height),
-            size: size,
-            scale: scale,
-            reason: reason
-        )
+        snapshotReason = reason
+        snapshotRequestID += 1
     }
 
     private func format(_ size: CGSize) -> String {
