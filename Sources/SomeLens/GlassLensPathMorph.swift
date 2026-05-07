@@ -12,6 +12,9 @@ extension GlassLensSettings {
 
     enum ShaderAnimationSignature: Hashable {
         case refraction(refraction: Int, edgeReflection: Int)
+        case chromaticAberration(amount: Int, falloff: Int, edgeOnly: Bool)
+        case frostedBlur(radius: Int, intensity: Int, edgeBias: Int)
+        case magnification(scale: Int, falloff: Int, centerRadius: Int)
     }
 
     struct QuantizedPoint: Hashable {
@@ -101,6 +104,77 @@ extension GlassLensSettings {
                         )
                     )
                 )
+
+            case let (
+                .chromaticAberration(startSettings),
+                .chromaticAberration(endSettings)
+            ):
+                return .chromaticAberration(
+                    GlassLensChromaticAberrationShaderSettings(
+                        amount: interpolate(
+                            startSettings.amount,
+                            endSettings.amount,
+                            progress: progress
+                        ),
+                        falloff: interpolate(
+                            startSettings.falloff,
+                            endSettings.falloff,
+                            progress: progress
+                        ),
+                        edgeOnly: endSettings.edgeOnly
+                    )
+                )
+
+            case let (
+                .frostedBlur(startSettings),
+                .frostedBlur(endSettings)
+            ):
+                return .frostedBlur(
+                    GlassLensFrostedBlurShaderSettings(
+                        radius: interpolate(
+                            startSettings.radius,
+                            endSettings.radius,
+                            progress: progress
+                        ),
+                        intensity: interpolate(
+                            startSettings.intensity,
+                            endSettings.intensity,
+                            progress: progress
+                        ),
+                        edgeBias: interpolate(
+                            startSettings.edgeBias,
+                            endSettings.edgeBias,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .magnification(startSettings),
+                .magnification(endSettings)
+            ):
+                return .magnification(
+                    GlassLensMagnificationShaderSettings(
+                        scale: interpolate(
+                            startSettings.scale,
+                            endSettings.scale,
+                            progress: progress
+                        ),
+                        falloff: interpolate(
+                            startSettings.falloff,
+                            endSettings.falloff,
+                            progress: progress
+                        ),
+                        centerRadius: interpolate(
+                            startSettings.centerRadius,
+                            endSettings.centerRadius,
+                            progress: progress
+                        )
+                    )
+                )
+
+            default:
+                return endShader
             }
         }
     }
@@ -291,6 +365,27 @@ private extension GlassLensShader {
             .refraction(
                 refraction: GlassLensSettings.quantized(settings.refraction),
                 edgeReflection: GlassLensSettings.quantized(settings.edgeReflection)
+            )
+
+        case .chromaticAberration(let settings):
+            .chromaticAberration(
+                amount: GlassLensSettings.quantized(settings.amount),
+                falloff: GlassLensSettings.quantized(settings.falloff),
+                edgeOnly: settings.edgeOnly
+            )
+
+        case .frostedBlur(let settings):
+            .frostedBlur(
+                radius: GlassLensSettings.quantized(settings.radius),
+                intensity: GlassLensSettings.quantized(settings.intensity),
+                edgeBias: GlassLensSettings.quantized(settings.edgeBias)
+            )
+
+        case .magnification(let settings):
+            .magnification(
+                scale: GlassLensSettings.quantized(settings.scale),
+                falloff: GlassLensSettings.quantized(settings.falloff),
+                centerRadius: GlassLensSettings.quantized(settings.centerRadius)
             )
         }
     }

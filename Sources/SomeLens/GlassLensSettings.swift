@@ -49,6 +49,9 @@ public struct GlassLensSettings {
 
 public enum GlassLensShader: Equatable, Sendable {
     case refraction(GlassLensRefractionShaderSettings)
+    case chromaticAberration(GlassLensChromaticAberrationShaderSettings)
+    case frostedBlur(GlassLensFrostedBlurShaderSettings)
+    case magnification(GlassLensMagnificationShaderSettings)
 }
 
 public struct GlassLensRefractionShaderSettings: Equatable, Sendable {
@@ -61,5 +64,53 @@ public struct GlassLensRefractionShaderSettings: Equatable, Sendable {
     ) {
         self.refraction = refraction
         self.edgeReflection = edgeReflection
+    }
+}
+
+public struct GlassLensChromaticAberrationShaderSettings: Equatable, Sendable {
+    public var amount: CGFloat
+    public var falloff: CGFloat
+    public var edgeOnly: Bool
+
+    public init(
+        amount: CGFloat = 12.0,
+        falloff: CGFloat = 1.8,
+        edgeOnly: Bool = true
+    ) {
+        self.amount = amount
+        self.falloff = falloff
+        self.edgeOnly = edgeOnly
+    }
+}
+
+public struct GlassLensFrostedBlurShaderSettings: Equatable, Sendable {
+    public var radius: CGFloat
+    public var intensity: CGFloat
+    public var edgeBias: CGFloat
+
+    public init(
+        radius: CGFloat = 8.0,
+        intensity: CGFloat = 0.72,
+        edgeBias: CGFloat = 0.35
+    ) {
+        self.radius = radius
+        self.intensity = intensity
+        self.edgeBias = edgeBias
+    }
+}
+
+public struct GlassLensMagnificationShaderSettings: Equatable, Sendable {
+    public var scale: CGFloat
+    public var falloff: CGFloat
+    public var centerRadius: CGFloat
+
+    public init(
+        scale: CGFloat = 1.55,
+        falloff: CGFloat = 1.25,
+        centerRadius: CGFloat = 0.42
+    ) {
+        self.scale = scale
+        self.falloff = falloff
+        self.centerRadius = centerRadius
     }
 }

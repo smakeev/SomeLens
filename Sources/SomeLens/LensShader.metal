@@ -80,3 +80,98 @@ using namespace metal;
     mixed.a = alphaFade;
     return mixed;
 }
+
+[[stitchable]] half4 chromaticAberration(float2 position,
+                                         SwiftUI::Layer layer,
+                                         float centerX,
+                                         float centerY,
+                                         float radius,
+                                         float amount,
+                                         float falloff,
+                                         float edgeOnly)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+    float2 direction = (dist > 1e-5) ? (toCenter / dist) : float2(0.0, 0.0);
+
+    float clampedFalloff = max(falloff, 0.05);
+    float edgeRamp = pow(saturate(nd), clampedFalloff);
+    float fullRamp = edgeOnly > 0.5 ? smoothstep(0.55, 1.0, nd) * edgeRamp : edgeRamp;
+    float offset = amount * fullRamp;
+    float2 channelOffset = direction * offset;
+
+    half4 base = layer.sample(position);
+    half4 redSample = layer.sample(position + channelOffset);
+    half4 blueSample = layer.sample(position - channelOffset);
+
+    half4 color = base;
+    color.r = redSample.r;
+    color.b = blueSample.b;
+    color.a = base.a;
+    return color;
+}
+
+[[stitchable]] half4 frostedBlur(float2 position,
+                                 SwiftUI::Layer layer,
+                                 float centerX,
+                                 float centerY,
+                                 float radius,
+                                 float blurRadius,
+                                 float intensity,
+                                 float edgeBias)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+
+    float clampedIntensity = saturate(intensity);
+    float clampedEdgeBias = saturate(edgeBias);
+    float blurRamp = mix(1.0, smoothstep(0.15, 1.0, nd), clampedEdgeBias);
+    float spread = max(blurRadius, 0.0) * blurRamp;
+
+    half4 base = layer.sample(position);
+    half4 sum = base * 0.20h;
+    sum += layer.sample(position + float2(spread, 0.0)) * 0.10h;
+    sum += layer.sample(position + float2(-spread, 0.0)) * 0.10h;
+    sum += layer.sample(position + float2(0.0, spread)) * 0.10h;
+    sum += layer.sample(position + float2(0.0, -spread)) * 0.10h;
+
+    float diagonalSpread = spread * 0.70710678;
+    sum += layer.sample(position + float2(diagonalSpread, diagonalSpread)) * 0.10h;
+    sum += layer.sample(position + float2(-diagonalSpread, diagonalSpread)) * 0.10h;
+    sum += layer.sample(position + float2(diagonalSpread, -diagonalSpread)) * 0.10h;
+    sum += layer.sample(position + float2(-diagonalSpread, -diagonalSpread)) * 0.10h;
+
+    half mixAmount = half(clampedIntensity);
+    half4 color = mix(base, sum, mixAmount);
+    color.a = base.a;
+    return color;
+}
+
+[[stitchable]] half4 magnification(float2 position,
+                                   SwiftUI::Layer layer,
+                                   float centerX,
+                                   float centerY,
+                                   float radius,
+                                   float scale,
+                                   float falloff,
+                                   float centerRadius)
+{
+    float2 center = float2(centerX, centerY);
+    float2 toCenter = position - center;
+    float dist = length(toCenter);
+    float nd = dist / max(radius, 1e-5);
+
+    float clampedScale = max(scale, 0.05);
+    float clampedFalloff = max(falloff, 0.05);
+    float clampedCenterRadius = clamp(centerRadius, 0.0, 0.95);
+    float edgeProgress = smoothstep(clampedCenterRadius, 1.0, nd);
+    float magnifyBlend = pow(1.0 - edgeProgress, clampedFalloff);
+    float localScale = mix(1.0, 1.0 / clampedScale, magnifyBlend);
+    float2 samplePosition = center + toCenter * localScale;
+
+    return layer.sample(samplePosition);
+}

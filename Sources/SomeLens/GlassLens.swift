@@ -260,6 +260,27 @@ private extension GlassLensShader {
                 lensSize: lensSize,
                 shaderRadius: shaderRadius
             )
+
+        case .chromaticAberration(let settings):
+            chromaticAberrationShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .frostedBlur(let settings):
+            frostedBlurShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .magnification(let settings):
+            magnificationShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
         }
     }
 
@@ -271,6 +292,17 @@ private extension GlassLensShader {
                 width: effectRadius * settings.refraction + 10,
                 height: effectRadius * settings.refraction + 10
             )
+
+        case .chromaticAberration(let settings):
+            let offset = max(settings.amount, 0) + 2
+            return CGSize(width: offset, height: offset)
+
+        case .frostedBlur(let settings):
+            let offset = max(settings.radius, 0) + 2
+            return CGSize(width: offset, height: offset)
+
+        case .magnification:
+            return CGSize(width: 2, height: 2)
         }
     }
 
@@ -290,6 +322,66 @@ private extension GlassLensShader {
 
         let library = ShaderLibrary.bundle(.module)
         let function = library[dynamicMember: "lensRefraction"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func chromaticAberrationShader(
+        settings: GlassLensChromaticAberrationShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.amount)),
+            .float(Float(settings.falloff)),
+            .float(settings.edgeOnly ? 1 : 0)
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "chromaticAberration"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func frostedBlurShader(
+        settings: GlassLensFrostedBlurShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.radius)),
+            .float(Float(settings.intensity)),
+            .float(Float(settings.edgeBias))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "frostedBlur"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func magnificationShader(
+        settings: GlassLensMagnificationShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.scale)),
+            .float(Float(settings.falloff)),
+            .float(Float(settings.centerRadius))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "magnification"]
         return Shader(function: function, arguments: arguments)
     }
 }

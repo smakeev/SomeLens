@@ -186,6 +186,48 @@ extension LensDemoShaderOption {
         ]
     )
 
+    static let chromatic = LensDemoShaderOption(
+        id: "chromatic",
+        title: "Chromatic",
+        shaders: [
+            .chromaticAberration(
+                GlassLensChromaticAberrationShaderSettings(
+                    amount: 16.0,
+                    falloff: 1.8,
+                    edgeOnly: true
+                )
+            )
+        ]
+    )
+
+    static let frosted = LensDemoShaderOption(
+        id: "frosted",
+        title: "Frosted",
+        shaders: [
+            .frostedBlur(
+                GlassLensFrostedBlurShaderSettings(
+                    radius: 10.0,
+                    intensity: 0.82,
+                    edgeBias: 0.2
+                )
+            )
+        ]
+    )
+
+    static let magnify = LensDemoShaderOption(
+        id: "magnify",
+        title: "Magnify",
+        shaders: [
+            .magnification(
+                GlassLensMagnificationShaderSettings(
+                    scale: 1.85,
+                    falloff: 1.35,
+                    centerRadius: 0.45
+                )
+            )
+        ]
+    )
+
     static let chain = LensDemoShaderOption(
         id: "chain",
         title: "Chain",
@@ -208,6 +250,9 @@ extension LensDemoShaderOption {
     static let all: [LensDemoShaderOption] = [
         .none,
         .refraction,
+        .chromatic,
+        .frosted,
+        .magnify,
         .chain
     ]
 }
