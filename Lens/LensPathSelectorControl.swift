@@ -15,7 +15,8 @@ struct LensDemoPathOption: Identifiable, Equatable {
         title: String,
         width: CGFloat,
         height: CGFloat,
-        path: @escaping @Sendable (CGRect) -> Path
+        path: @escaping @Sendable (CGRect) -> Path,
+        shaders: [GlassLensShader] = LensDemoPathOption.defaultShaderChain
     ) {
         self.id = id
         self.title = title
@@ -23,7 +24,8 @@ struct LensDemoPathOption: Identifiable, Equatable {
             width: width,
             height: height,
             path: path,
-            animatesPathChanges: true
+            animatesPathChanges: true,
+            shaders: shaders
         )
     }
 
@@ -33,6 +35,21 @@ struct LensDemoPathOption: Identifiable, Equatable {
 }
 
 extension LensDemoPathOption {
+    static let defaultShaderChain: [GlassLensShader] = [
+        .refraction(
+            GlassLensRefractionShaderSettings(
+                refraction: 1.2,
+                edgeReflection: 0.8
+            )
+        ),
+        .refraction(
+            GlassLensRefractionShaderSettings(
+                refraction: 0.45,
+                edgeReflection: 0.35
+            )
+        )
+    ]
+
     static let circle = LensDemoPathOption(
         id: "circle",
         title: "Circle",

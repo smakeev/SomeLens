@@ -4,11 +4,14 @@ extension GlassLensSettings {
     struct PathAnimationSignature: Hashable {
         let width: Int
         let height: Int
-        let refraction: Int
-        let edgeReflection: Int
         let ringWidth: Int
         let animatesPathChanges: Bool
+        let shaders: [ShaderAnimationSignature]
         let outline: [QuantizedPoint]
+    }
+
+    enum ShaderAnimationSignature: Hashable {
+        case refraction(refraction: Int, edgeReflection: Int)
     }
 
     struct QuantizedPoint: Hashable {
@@ -20,10 +23,9 @@ extension GlassLensSettings {
         PathAnimationSignature(
             width: Self.quantized(width),
             height: Self.quantized(height),
-            refraction: Self.quantized(refraction),
-            edgeReflection: Self.quantized(edgeReflection),
             ringWidth: Self.quantized(ringWidth),
             animatesPathChanges: animatesPathChanges,
+            shaders: shaders.map(\.animationSignature),
             outline: normalizedOutline(sampleCount: Self.signatureSampleCount).map {
                 QuantizedPoint(x: Self.quantized($0.x), y: Self.quantized($0.y))
             }
@@ -60,11 +62,47 @@ extension GlassLensSettings {
             path: { rect in
                 Self.path(for: points, in: rect)
             },
-            refraction: interpolate(start.refraction, end.refraction, progress: clampedProgress),
-            edgeReflection: interpolate(start.edgeReflection, end.edgeReflection, progress: clampedProgress),
             ringWidth: interpolate(start.ringWidth, end.ringWidth, progress: clampedProgress),
-            animatesPathChanges: end.animatesPathChanges
+            animatesPathChanges: end.animatesPathChanges,
+            shaders: Self.interpolatedShaders(
+                from: start.shaders,
+                to: end.shaders,
+                progress: clampedProgress
+            )
         )
+    }
+
+    private static func interpolatedShaders(
+        from start: [GlassLensShader],
+        to end: [GlassLensShader],
+        progress: CGFloat
+    ) -> [GlassLensShader] {
+        guard start.count == end.count else {
+            return end
+        }
+
+        return zip(start, end).map { startShader, endShader in
+            switch (startShader, endShader) {
+            case let (
+                .refraction(startSettings),
+                .refraction(endSettings)
+            ):
+                return .refraction(
+                    GlassLensRefractionShaderSettings(
+                        refraction: interpolate(
+                            startSettings.refraction,
+                            endSettings.refraction,
+                            progress: progress
+                        ),
+                        edgeReflection: interpolate(
+                            startSettings.edgeReflection,
+                            endSettings.edgeReflection,
+                            progress: progress
+                        )
+                    )
+                )
+            }
+        }
     }
 
     private func normalizedOutline(sampleCount: Int) -> [CGPoint] {
@@ -230,7 +268,7 @@ extension GlassLensSettings {
         start + (end - start) * progress
     }
 
-    private static func quantized(_ value: CGFloat) -> Int {
+    fileprivate static func quantized(_ value: CGFloat) -> Int {
         Int((value * 10_000).rounded())
     }
 
@@ -244,4 +282,16 @@ extension GlassLensSettings {
         CGPoint(x: 1, y: 1),
         CGPoint(x: 0, y: 1)
     ]
+}
+
+private extension GlassLensShader {
+    var animationSignature: GlassLensSettings.ShaderAnimationSignature {
+        switch self {
+        case .refraction(let settings):
+            .refraction(
+                refraction: GlassLensSettings.quantized(settings.refraction),
+                edgeReflection: GlassLensSettings.quantized(settings.edgeReflection)
+            )
+        }
+    }
 }

@@ -131,7 +131,11 @@ private struct GlassLensRenderer: View, Animatable, Loggable {
                 }
             }
             .frame(width: lensSize.width, height: lensSize.height)
-            .layerEffect(lensShader, maxSampleOffset: sampleOffset)
+            .applyingGlassLensShaders(
+                settings.shaders,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
             .clipShape(lensShape)
 
             lensShape
@@ -221,7 +225,60 @@ private struct GlassLensRenderer: View, Animatable, Loggable {
         #endif
     }
 
-    private var lensShader: Shader {
+    private func format(_ point: CGPoint) -> String {
+        "(\(Int(point.x)),\(Int(point.y)))"
+    }
+
+    private func format(_ size: CGSize) -> String {
+        "\(Int(size.width))x\(Int(size.height))"
+    }
+}
+
+private extension View {
+    func applyingGlassLensShaders(
+        _ shaders: [GlassLensShader],
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> AnyView {
+        shaders.reduce(AnyView(self)) { view, shader in
+            AnyView(
+                view.layerEffect(
+                    shader.shader(lensSize: lensSize, shaderRadius: shaderRadius),
+                    maxSampleOffset: shader.sampleOffset(shaderRadius: shaderRadius)
+                )
+            )
+        }
+    }
+}
+
+private extension GlassLensShader {
+    func shader(lensSize: CGSize, shaderRadius: CGFloat) -> Shader {
+        switch self {
+        case .refraction(let settings):
+            refractionShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+        }
+    }
+
+    func sampleOffset(shaderRadius: CGFloat) -> CGSize {
+        switch self {
+        case .refraction(let settings):
+            let effectRadius = shaderRadius * 1.15
+            return CGSize(
+                width: effectRadius * settings.refraction + 10,
+                height: effectRadius * settings.refraction + 10
+            )
+        }
+    }
+
+    private func refractionShader(
+        settings: GlassLensRefractionShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
         let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
         let arguments: [Shader.Argument] = [
             .float(localCenter.x),
@@ -234,22 +291,6 @@ private struct GlassLensRenderer: View, Animatable, Loggable {
         let library = ShaderLibrary.bundle(.module)
         let function = library[dynamicMember: "lensRefraction"]
         return Shader(function: function, arguments: arguments)
-    }
-
-    private var sampleOffset: CGSize {
-        let effectRadius = shaderRadius * 1.15
-        return CGSize(
-            width: effectRadius * settings.refraction + 10,
-            height: effectRadius * settings.refraction + 10
-        )
-    }
-
-    private func format(_ point: CGPoint) -> String {
-        "(\(Int(point.x)),\(Int(point.y)))"
-    }
-
-    private func format(_ size: CGSize) -> String {
-        "\(Int(size.width))x\(Int(size.height))"
     }
 }
 
