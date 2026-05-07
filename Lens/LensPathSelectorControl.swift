@@ -327,23 +327,68 @@ extension LensDemoShaderOption {
         ]
     )
 
-    static let chain = LensDemoShaderOption(
-        id: "chain",
-        title: "Chain",
+    static let colorGlass = LensDemoShaderOption(
+        id: "color-glass",
+        title: "Color Glass",
         shaders: [
-            .refraction(
-                GlassLensRefractionShaderSettings(
-                    refraction: 1.2,
-                    edgeReflection: 0.8
-                )
-            ),
-            .refraction(
-                GlassLensRefractionShaderSettings(
-                    refraction: 0.45,
-                    edgeReflection: 0.35
+            .colorGlass(
+                GlassLensColorGlassShaderSettings(
+                    red: 0.35,
+                    green: 0.72,
+                    blue: 1.0,
+                    alpha: 0.42
                 )
             )
         ]
+    )
+
+    static let noise = LensDemoShaderOption(
+        id: "noise",
+        title: "Noise",
+        shaders: [
+            .noise(
+                GlassLensNoiseShaderSettings(
+                    red: 0.9,
+                    green: 0.96,
+                    blue: 1.0,
+                    alpha: 0.34,
+                    density: 0.42
+                )
+            )
+        ]
+    )
+
+    static let soapBubble = LensDemoShaderOption(
+        id: "soap-bubble",
+        title: "Soap",
+        shaders: [
+            .soapBubble(
+                GlassLensSoapBubbleShaderSettings(
+                    intensity: 0.72,
+                    scale: 7.0,
+                    phase: 0.4
+                )
+            )
+        ]
+    )
+
+    static let chain = LensDemoShaderOption(
+        id: "chain",
+        title: "Chain",
+        shaders: refraction.shaders
+            + chromatic.shaders
+            + frosted.shaders
+            + magnify.shaders
+            + ripple.shaders
+            + twirl.shaders
+            + caustics.shaders
+            + vignette.shaders
+            + rimGlow.shaders
+            + sparkle.shaders
+            + prism.shaders
+            + colorGlass.shaders
+            + noise.shaders
+            + soapBubble.shaders
     )
 
     static let all: [LensDemoShaderOption] = [
@@ -359,6 +404,9 @@ extension LensDemoShaderOption {
         .rimGlow,
         .sparkle,
         .prism,
+        .colorGlass,
+        .noise,
+        .soapBubble,
         .chain
     ]
 }

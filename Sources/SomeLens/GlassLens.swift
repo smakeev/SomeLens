@@ -330,6 +330,23 @@ private extension GlassLensShader {
                 lensSize: lensSize,
                 shaderRadius: shaderRadius
             )
+
+        case .colorGlass(let settings):
+            colorGlassShader(settings: settings)
+
+        case .noise(let settings):
+            noiseShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
+
+        case .soapBubble(let settings):
+            soapBubbleShader(
+                settings: settings,
+                lensSize: lensSize,
+                shaderRadius: shaderRadius
+            )
         }
     }
 
@@ -377,6 +394,15 @@ private extension GlassLensShader {
         case .prism(let settings):
             let offset = max(settings.amount, 0) + 2
             return CGSize(width: offset, height: offset)
+
+        case .colorGlass:
+            return CGSize(width: 2, height: 2)
+
+        case .noise:
+            return CGSize(width: 2, height: 2)
+
+        case .soapBubble:
+            return CGSize(width: 2, height: 2)
         }
     }
 
@@ -597,6 +623,61 @@ private extension GlassLensShader {
 
         let library = ShaderLibrary.bundle(.module)
         let function = library[dynamicMember: "prism"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func colorGlassShader(settings: GlassLensColorGlassShaderSettings) -> Shader {
+        let arguments: [Shader.Argument] = [
+            .float(Float(settings.red)),
+            .float(Float(settings.green)),
+            .float(Float(settings.blue)),
+            .float(Float(settings.alpha))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "colorGlass"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func noiseShader(
+        settings: GlassLensNoiseShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.red)),
+            .float(Float(settings.green)),
+            .float(Float(settings.blue)),
+            .float(Float(settings.alpha)),
+            .float(Float(settings.density))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "noise"]
+        return Shader(function: function, arguments: arguments)
+    }
+
+    private func soapBubbleShader(
+        settings: GlassLensSoapBubbleShaderSettings,
+        lensSize: CGSize,
+        shaderRadius: CGFloat
+    ) -> Shader {
+        let localCenter = SIMD2<Float>(Float(lensSize.width / 2), Float(lensSize.height / 2))
+        let arguments: [Shader.Argument] = [
+            .float(localCenter.x),
+            .float(localCenter.y),
+            .float(Float(shaderRadius)),
+            .float(Float(settings.intensity)),
+            .float(Float(settings.scale)),
+            .float(Float(settings.phase))
+        ]
+
+        let library = ShaderLibrary.bundle(.module)
+        let function = library[dynamicMember: "soapBubble"]
         return Shader(function: function, arguments: arguments)
     }
 }

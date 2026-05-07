@@ -59,6 +59,9 @@ public enum GlassLensShader: Equatable, Sendable {
     case rimGlow(GlassLensRimGlowShaderSettings)
     case sparkle(GlassLensSparkleShaderSettings)
     case prism(GlassLensPrismShaderSettings)
+    case colorGlass(GlassLensColorGlassShaderSettings)
+    case noise(GlassLensNoiseShaderSettings)
+    case soapBubble(GlassLensSoapBubbleShaderSettings)
 }
 
 public struct GlassLensRefractionShaderSettings: Equatable, Sendable {
@@ -234,5 +237,62 @@ public struct GlassLensPrismShaderSettings: Equatable, Sendable {
         self.amount = amount
         self.facets = facets
         self.falloff = falloff
+    }
+}
+
+public struct GlassLensColorGlassShaderSettings: Equatable, Sendable {
+    public var red: CGFloat
+    public var green: CGFloat
+    public var blue: CGFloat
+    public var alpha: CGFloat
+
+    public init(
+        red: CGFloat = 0.45,
+        green: CGFloat = 0.78,
+        blue: CGFloat = 1.0,
+        alpha: CGFloat = 0.28
+    ) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+        self.alpha = alpha
+    }
+}
+
+public struct GlassLensNoiseShaderSettings: Equatable, Sendable {
+    public var red: CGFloat
+    public var green: CGFloat
+    public var blue: CGFloat
+    public var alpha: CGFloat
+    public var density: CGFloat
+
+    public init(
+        red: CGFloat = 1.0,
+        green: CGFloat = 1.0,
+        blue: CGFloat = 1.0,
+        alpha: CGFloat = 0.22,
+        density: CGFloat = 0.36
+    ) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+        self.alpha = alpha
+        self.density = density
+    }
+}
+
+public struct GlassLensSoapBubbleShaderSettings: Equatable, Sendable {
+    public var intensity: CGFloat
+    public var scale: CGFloat
+    public var phase: CGFloat
+
+    public init(
+        intensity: CGFloat = 0.55,
+        scale: CGFloat = 9.0,
+        phase: CGFloat = 0.0
+    ) {
+        self.intensity = intensity
+        self.scale = scale
+        self.phase = phase
     }
 }

@@ -22,6 +22,9 @@ extension GlassLensSettings {
         case rimGlow(intensity: Int, width: Int, softness: Int)
         case sparkle(intensity: Int, scale: Int, threshold: Int)
         case prism(amount: Int, facets: Int, falloff: Int)
+        case colorGlass(red: Int, green: Int, blue: Int, alpha: Int)
+        case noise(red: Int, green: Int, blue: Int, alpha: Int, density: Int)
+        case soapBubble(intensity: Int, scale: Int, phase: Int)
     }
 
     struct QuantizedPoint: Hashable {
@@ -353,6 +356,93 @@ extension GlassLensSettings {
                     )
                 )
 
+            case let (
+                .colorGlass(startSettings),
+                .colorGlass(endSettings)
+            ):
+                return .colorGlass(
+                    GlassLensColorGlassShaderSettings(
+                        red: interpolate(
+                            startSettings.red,
+                            endSettings.red,
+                            progress: progress
+                        ),
+                        green: interpolate(
+                            startSettings.green,
+                            endSettings.green,
+                            progress: progress
+                        ),
+                        blue: interpolate(
+                            startSettings.blue,
+                            endSettings.blue,
+                            progress: progress
+                        ),
+                        alpha: interpolate(
+                            startSettings.alpha,
+                            endSettings.alpha,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .noise(startSettings),
+                .noise(endSettings)
+            ):
+                return .noise(
+                    GlassLensNoiseShaderSettings(
+                        red: interpolate(
+                            startSettings.red,
+                            endSettings.red,
+                            progress: progress
+                        ),
+                        green: interpolate(
+                            startSettings.green,
+                            endSettings.green,
+                            progress: progress
+                        ),
+                        blue: interpolate(
+                            startSettings.blue,
+                            endSettings.blue,
+                            progress: progress
+                        ),
+                        alpha: interpolate(
+                            startSettings.alpha,
+                            endSettings.alpha,
+                            progress: progress
+                        ),
+                        density: interpolate(
+                            startSettings.density,
+                            endSettings.density,
+                            progress: progress
+                        )
+                    )
+                )
+
+            case let (
+                .soapBubble(startSettings),
+                .soapBubble(endSettings)
+            ):
+                return .soapBubble(
+                    GlassLensSoapBubbleShaderSettings(
+                        intensity: interpolate(
+                            startSettings.intensity,
+                            endSettings.intensity,
+                            progress: progress
+                        ),
+                        scale: interpolate(
+                            startSettings.scale,
+                            endSettings.scale,
+                            progress: progress
+                        ),
+                        phase: interpolate(
+                            startSettings.phase,
+                            endSettings.phase,
+                            progress: progress
+                        )
+                    )
+                )
+
             default:
                 return endShader
             }
@@ -616,6 +706,30 @@ private extension GlassLensShader {
                 amount: GlassLensSettings.quantized(settings.amount),
                 facets: GlassLensSettings.quantized(settings.facets),
                 falloff: GlassLensSettings.quantized(settings.falloff)
+            )
+
+        case .colorGlass(let settings):
+            .colorGlass(
+                red: GlassLensSettings.quantized(settings.red),
+                green: GlassLensSettings.quantized(settings.green),
+                blue: GlassLensSettings.quantized(settings.blue),
+                alpha: GlassLensSettings.quantized(settings.alpha)
+            )
+
+        case .noise(let settings):
+            .noise(
+                red: GlassLensSettings.quantized(settings.red),
+                green: GlassLensSettings.quantized(settings.green),
+                blue: GlassLensSettings.quantized(settings.blue),
+                alpha: GlassLensSettings.quantized(settings.alpha),
+                density: GlassLensSettings.quantized(settings.density)
+            )
+
+        case .soapBubble(let settings):
+            .soapBubble(
+                intensity: GlassLensSettings.quantized(settings.intensity),
+                scale: GlassLensSettings.quantized(settings.scale),
+                phase: GlassLensSettings.quantized(settings.phase)
             )
         }
     }

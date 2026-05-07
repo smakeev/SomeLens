@@ -18,7 +18,7 @@ let package = Package(
         .target(
             name: "SomeLens",
             resources: [
-                .process("LensShader.metal")
+                .process("Shaders")
             ]
         )
     ]
