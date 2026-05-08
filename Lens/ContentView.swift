@@ -66,6 +66,7 @@ struct LensDemoScreen: View {
     @State private var selectedPath: LensDemoPathOption = .circle
     @State private var selectedShaders: [LensDemoShaderOption] = [.refraction]
     @State private var animatesPathChanges = true
+    @State private var pauseSnapshotsWhileDragging = false
     @State private var isRefreshRatePickerPresented = false
     @State private var isCustomRefreshRateEditorPresented = false
     @State private var customMillisecondsText = "200"
@@ -100,7 +101,10 @@ struct LensDemoScreen: View {
             )
 
             ZStack(alignment: .topLeading) {
-                LensContainer(snapshotRefreshRate: snapshotRefreshRate, isSnapshotPaused: isLensDragging) {
+                LensContainer(
+                    snapshotRefreshRate: snapshotRefreshRate,
+                    isSnapshotPaused: isLensDragging && pauseSnapshotsWhileDragging
+                ) {
                     ZStack(alignment: .topLeading) {
                         DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -111,6 +115,7 @@ struct LensDemoScreen: View {
                             selectedPath: selectedPath,
                             selectedShaders: selectedShaders,
                             animatesPathChanges: $animatesPathChanges,
+                            pauseSnapshotsWhileDragging: $pauseSnapshotsWhileDragging,
                             safeInsets: safeInsets,
                             onRefreshRateTap: {
                                 withAnimation {
@@ -267,6 +272,7 @@ private struct LensDemoControlsRow: View {
     let selectedPath: LensDemoPathOption
     let selectedShaders: [LensDemoShaderOption]
     @Binding var animatesPathChanges: Bool
+    @Binding var pauseSnapshotsWhileDragging: Bool
     let safeInsets: EdgeInsets
     let onRefreshRateTap: () -> Void
     let onPathTap: () -> Void
@@ -296,21 +302,19 @@ private struct LensDemoControlsRow: View {
                 }
                 .buttonStyle(.plain)
 
-                HStack(spacing: 8) {
-                    Text("Animate")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
+                toggleControl(
+                    title: "Animate",
+                    accessibilityLabel: "Animate path changes",
+                    isOn: $animatesPathChanges,
+                    width: Self.animationToggleWidth
+                )
 
-                    Toggle("Animate path changes", isOn: $animatesPathChanges)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                }
-                .frame(width: Self.animationToggleWidth)
-                .padding(.vertical, 7)
-                .background(Self.controlBackground, in: Capsule())
-                .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                toggleControl(
+                    title: "Pause move",
+                    accessibilityLabel: "Pause snapshots while moving",
+                    isOn: $pauseSnapshotsWhileDragging,
+                    width: Self.pauseMoveToggleWidth
+                )
             }
             .padding(.leading, safeInsets.leading + 12)
             .padding(.trailing, 12)
@@ -329,6 +333,29 @@ private struct LensDemoControlsRow: View {
             .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
     }
 
+    private func toggleControl(
+        title: String,
+        accessibilityLabel: String,
+        isOn: Binding<Bool>,
+        width: CGFloat
+    ) -> some View {
+        HStack(spacing: 8) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+
+            Toggle(accessibilityLabel, isOn: isOn)
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .controlSize(.small)
+        }
+        .frame(width: width)
+        .padding(.vertical, 7)
+        .background(Self.controlBackground, in: Capsule())
+        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+    }
+
     private var shaderButtonTitle: String {
         if selectedShaders.isEmpty {
             "Shaders 0"
@@ -339,6 +366,7 @@ private struct LensDemoControlsRow: View {
 
     private static let controlBackground = Color.white.opacity(0.36)
     private static let animationToggleWidth: CGFloat = 132
+    private static let pauseMoveToggleWidth: CGFloat = 150
 }
 
 private struct LensDemoControlsPresentationLayer: View {
