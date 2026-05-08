@@ -10,46 +10,91 @@ import Combine
 final class LensSnapshotProvider: ObservableObject, Loggable {
     @Published var snapshot: SomeLensPlatformImage?
     @Published var snapshotVersion: Int = 0
-    let snapshotRequests = PassthroughSubject<Date, Never>()
+    let snapshotRequests = PassthroughSubject<LensSnapshotRequest, Never>()
     private var captureCount: Int = 0
 
     nonisolated var log: SomeLensLog.Scope {
         SomeLensLog.snapshot
     }
 
-    // The timer lives in this StateObject-backed provider instead of LensContainer's
-    // View value. LensContainer can be recreated on every parent update, while this
-    // object stays alive long enough for refresh ticks to fire.
-    private var timerCancellable: AnyCancellable?
+    // The snapshot loop lives in this StateObject-backed provider instead of
+    // LensContainer's View value. LensContainer can be recreated on every parent
+    // update, while this object stays alive long enough to pace captures.
+    private var scheduledSnapshotTask: Task<Void, Never>?
     private var activeRefreshRate: SnapshotRefreshRate?
+    private var isSnapshotPaused = false
+    private var isSnapshotRequestPending = false
+    private var isSnapshotInFlight = false
+    private var isSnapshotNeeded = false
+    private var lastSnapshotFinishedAt: Date?
+    private var lastSnapshotDuration: TimeInterval = 0
 
-    func startTimer(refreshRate: SnapshotRefreshRate) {
+    func startSnapshotLoop(refreshRate: SnapshotRefreshRate) {
         guard activeRefreshRate != refreshRate else { return }
         let interval = refreshRate.interval
 
-        stopTimer()
+        stopSnapshotLoop()
         activeRefreshRate = refreshRate
 
         if let interval {
-            i("timer start interval=\(String(format: "%.3f", interval))")
-            timerCancellable = Timer.publish(every: interval, on: .main, in: .common)
-                .autoconnect()
-                .sink { [weak self] date in
-                    guard let self else { return }
-                    self.d("timer tick")
-                    self.snapshotRequests.send(date)
-                }
+            i("snapshot loop start minimumInterval=\(String(format: "%.3f", interval))")
         } else {
-            i("timer disabled rate=never")
+            i("snapshot loop disabled rate=never")
         }
     }
 
-    func stopTimer() {
-        guard timerCancellable != nil || activeRefreshRate != nil else { return }
-        i("timer stop")
-        timerCancellable?.cancel()
-        timerCancellable = nil
+    func stopSnapshotLoop() {
+        guard scheduledSnapshotTask != nil || activeRefreshRate != nil else { return }
+        i("snapshot loop stop")
+        scheduledSnapshotTask?.cancel()
+        scheduledSnapshotTask = nil
         activeRefreshRate = nil
+        isSnapshotNeeded = false
+        isSnapshotRequestPending = false
+    }
+
+    func setSnapshotPaused(_ isPaused: Bool) {
+        guard isSnapshotPaused != isPaused else { return }
+        isSnapshotPaused = isPaused
+        d("snapshot pause changed paused=\(isPaused)")
+
+        if isPaused {
+            isSnapshotNeeded = true
+            return
+        }
+
+        requestSnapshot(reason: "resumed")
+    }
+
+    func requestSnapshot(reason: String) {
+        guard !isSnapshotPaused else {
+            d("snapshot coalesced reason=\(reason) paused=true")
+            isSnapshotNeeded = true
+            return
+        }
+
+        guard !isSnapshotInFlight, !isSnapshotRequestPending else {
+            d("snapshot coalesced reason=\(reason) inFlight=\(isSnapshotInFlight) pending=\(isSnapshotRequestPending)")
+            isSnapshotNeeded = true
+            return
+        }
+
+        let now = Date()
+        if let lastSnapshotFinishedAt {
+            let elapsed = now.timeIntervalSince(lastSnapshotFinishedAt)
+            let delay = effectiveInterval - elapsed
+            guard delay <= 0 else {
+                d("snapshot delayed reason=\(reason) remaining=\(String(format: "%.3f", delay))")
+                isSnapshotNeeded = true
+                scheduleNextSnapshot(after: delay, reason: reason)
+                return
+            }
+        }
+
+        isSnapshotRequestPending = true
+        isSnapshotNeeded = false
+        d("snapshot requested reason=\(reason)")
+        snapshotRequests.send(LensSnapshotRequest(date: now, reason: reason))
     }
 
     #if os(iOS)
@@ -59,6 +104,12 @@ final class LensSnapshotProvider: ObservableObject, Loggable {
         scale: CGFloat,
         reason: String
     ) {
+        beginCapture()
+        let startedAt = Date()
+        defer {
+            finishCapture(startedAt: startedAt)
+        }
+
         guard size.width > 0, size.height > 0 else {
             i("skip capture reason=\(reason) invalid size=\(format(size))")
             return
@@ -86,6 +137,12 @@ final class LensSnapshotProvider: ObservableObject, Loggable {
         scale: CGFloat,
         reason: String
     ) {
+        beginCapture()
+        let startedAt = Date()
+        defer {
+            finishCapture(startedAt: startedAt)
+        }
+
         guard size.width > 0, size.height > 0 else {
             i("skip capture reason=\(reason) invalid size=\(format(size))")
             return
@@ -116,4 +173,54 @@ final class LensSnapshotProvider: ObservableObject, Loggable {
     private func format(_ size: CGSize) -> String {
         "\(Int(size.width))x\(Int(size.height))"
     }
+
+    private var effectiveInterval: TimeInterval {
+        max(activeRefreshRate?.interval ?? 0, lastSnapshotDuration * 1.5)
+    }
+
+    private func beginCapture() {
+        scheduledSnapshotTask?.cancel()
+        scheduledSnapshotTask = nil
+        isSnapshotRequestPending = false
+        isSnapshotInFlight = true
+    }
+
+    private func finishCapture(startedAt: Date) {
+        let finishedAt = Date()
+        lastSnapshotDuration = finishedAt.timeIntervalSince(startedAt)
+        lastSnapshotFinishedAt = finishedAt
+        isSnapshotInFlight = false
+
+        d("capture finished duration=\(String(format: "%.3f", lastSnapshotDuration)) effectiveInterval=\(String(format: "%.3f", effectiveInterval))")
+
+        guard activeRefreshRate?.interval != nil else { return }
+
+        if isSnapshotNeeded {
+            isSnapshotNeeded = false
+            scheduleNextSnapshot(after: effectiveInterval, reason: "coalesced")
+        } else {
+            scheduleNextSnapshot(after: effectiveInterval, reason: "scheduled")
+        }
+    }
+
+    private func scheduleNextSnapshot(after delay: TimeInterval, reason: String) {
+        guard activeRefreshRate?.interval != nil else { return }
+
+        let clampedDelay = max(delay, 0)
+        scheduledSnapshotTask?.cancel()
+        scheduledSnapshotTask = Task { @MainActor [weak self] in
+            let nanoseconds = UInt64(clampedDelay * 1_000_000_000)
+            if nanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: nanoseconds)
+            }
+            guard let self, !Task.isCancelled else { return }
+            self.scheduledSnapshotTask = nil
+            self.requestSnapshot(reason: reason)
+        }
+    }
+}
+
+struct LensSnapshotRequest {
+    let date: Date
+    let reason: String
 }

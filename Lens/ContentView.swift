@@ -71,6 +71,7 @@ struct LensDemoScreen: View {
     @State private var customMillisecondsText = "200"
     @State private var isPathPickerPresented = false
     @State private var isShaderPickerPresented = false
+    @State private var isLensDragging = false
     private let counterTimer = Timer.publish(every: 0.05, on: .main, in: .common).autoconnect()
 
     private var lensSettings: GlassLensSettings {
@@ -99,7 +100,7 @@ struct LensDemoScreen: View {
             )
 
             ZStack(alignment: .topLeading) {
-                LensContainer(snapshotRefreshRate: snapshotRefreshRate) {
+                LensContainer(snapshotRefreshRate: snapshotRefreshRate, isSnapshotPaused: isLensDragging) {
                     ZStack(alignment: .topLeading) {
                         DemoBackgroundView(counterValue: currentCounter, safeInsets: safeInsets)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -174,6 +175,7 @@ struct LensDemoScreen: View {
     private func lensDragGesture(containerSize: CGSize, safeInsets: EdgeInsets) -> some Gesture {
         DragGesture()
             .onChanged { value in
+                isLensDragging = true
                 let lastCommittedLensCenter = clampedLensCenter(
                     ratio: lastCommittedLensCenterRatio,
                     containerSize: containerSize,
@@ -195,6 +197,7 @@ struct LensDemoScreen: View {
             }
             .onEnded { _ in
                 lastCommittedLensCenterRatio = lensCenterRatio
+                isLensDragging = false
             }
     }
 

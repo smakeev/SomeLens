@@ -8,7 +8,7 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
     private let content: () -> Content
     private let lenses: () -> Lenses
     private let snapshotRefreshRate: SnapshotRefreshRate
-    @State private var latestSnapshotRequest: Date?
+    private let isSnapshotPaused: Bool
     @State private var snapshotRequestID: Int = 0
     @State private var snapshotReason: String = "initial"
     @StateObject private var snapshotProvider = LensSnapshotProvider()
@@ -19,10 +19,12 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
 
     public init(
         snapshotRefreshRate: SnapshotRefreshRate = .automatic,
+        isSnapshotPaused: Bool = false,
         @ViewBuilder content: @escaping () -> Content,
         @ViewBuilder lenses: @escaping () -> Lenses
     ) {
         self.snapshotRefreshRate = snapshotRefreshRate
+        self.isSnapshotPaused = isSnapshotPaused
         self.content = content
         self.lenses = lenses
     }
@@ -50,21 +52,24 @@ public struct LensContainer<Content: View, Lenses: View>: View, Loggable {
             }
             .onAppear {
                 i("appear size=\(format(size)) scale=\(scale) rate=\(snapshotRefreshRate.debugDescription)")
-                requestSnapshot(reason: "appear", size: size)
-                snapshotProvider.startTimer(refreshRate: snapshotRefreshRate)
+                snapshotProvider.setSnapshotPaused(isSnapshotPaused)
+                snapshotProvider.startSnapshotLoop(refreshRate: snapshotRefreshRate)
+                snapshotProvider.requestSnapshot(reason: "appear")
             }
             .onChange(of: snapshotRefreshRate) { _, newRefreshRate in
                 i("rate changed rate=\(newRefreshRate.debugDescription)")
-                requestSnapshot(reason: "rateChanged", size: size)
-                snapshotProvider.startTimer(refreshRate: newRefreshRate)
+                snapshotProvider.startSnapshotLoop(refreshRate: newRefreshRate)
+                snapshotProvider.requestSnapshot(reason: "rateChanged")
+            }
+            .onChange(of: isSnapshotPaused) { _, newValue in
+                snapshotProvider.setSnapshotPaused(newValue)
             }
             .onDisappear {
-                snapshotProvider.stopTimer()
+                snapshotProvider.stopSnapshotLoop()
             }
-            .onReceive(snapshotProvider.snapshotRequests) { date in
-                latestSnapshotRequest = date
-                d("timer tick")
-                requestSnapshot(reason: "timer", size: size)
+            .onReceive(snapshotProvider.snapshotRequests) { request in
+                d("snapshot request reason=\(request.reason)")
+                requestSnapshot(reason: request.reason, size: size)
             }
         }
     }
