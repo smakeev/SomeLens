@@ -22,9 +22,9 @@ struct ExampleView: View {
     @State private var lensCenter = CGPoint(x: 160, y: 240)
 
     var body: some View {
-        ZStack {
+        LensContainer {
             content
-
+        } lenses: {
             GlassLens(
                 center: lensCenter,
                 settings: GlassLensSettings.circle(
