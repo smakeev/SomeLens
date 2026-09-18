@@ -12,6 +12,11 @@ final class LensSnapshotProvider: ObservableObject, Loggable {
     @Published var snapshotVersion: Int = 0
     let snapshotRequests = PassthroughSubject<LensSnapshotRequest, Never>()
     private var captureCount: Int = 0
+    #if os(macOS)
+    /// Video layers draw nothing through `cacheDisplay`, so their frames are
+    /// composited into the snapshot separately.
+    private let videoCapture = LensVideoLayerCapture()
+    #endif
 
     nonisolated var log: SomeLensLog.Scope {
         SomeLensLog.snapshot
@@ -158,6 +163,10 @@ final class LensSnapshotProvider: ObservableObject, Loggable {
         if let bitmap = view.bitmapImageRepForCachingDisplay(in: bounds) {
             bitmap.size = size
             view.cacheDisplay(in: bounds, to: bitmap)
+            let videoLayers = videoCapture.composite(into: bitmap, from: view, size: size)
+            if videoLayers > 0 {
+                d("capture #\(captureCount) composited \(videoLayers) video layer(s)")
+            }
 
             let image = NSImage(size: size)
             image.addRepresentation(bitmap)

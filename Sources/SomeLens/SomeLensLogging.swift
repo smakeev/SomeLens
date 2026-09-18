@@ -90,4 +90,5 @@ enum SomeLensLog {
     static let container = Scope(logger: Logger(subsystem: "SomeLens", category: "LensContainer"))
     static let lens = Scope(logger: Logger(subsystem: "SomeLens", category: "GlassLens"))
     static let snapshot = Scope(logger: Logger(subsystem: "SomeLens", category: "SnapshotProvider"))
+    static let video = Scope(logger: Logger(subsystem: "SomeLens", category: "VideoLayerCapture"))
 }
